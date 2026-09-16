@@ -1,0 +1,22 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/check_freshness.py\" \"${CLAUDE_PROJECT_DIR:-.}\" --hook",
+            "timeout": 30,
+            "statusMessage": "Checking vault freshness"
+          },
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/write_flow_register.py\" --hook",
+            "timeout": 10,
+            "statusMessage": "Checking write-flow register"
+          }
+        ]
+      }
+    ]
+  }
+}

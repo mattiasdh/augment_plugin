@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mattiasdh/augment_plugin/schema/config.json",
+  "title": "Vault configuration",
+  "description": "augment_wiki/config.yaml, the only hand-written file in the wiki folder. Nothing regenerates or reorders it. It holds what the person declares, which is the opposite of the index: machine state projected from the ledger and never hand-edited.",
+  "type": "object",
+  "properties": {
+    "contract_version": {
+      "type": "string",
+      "description": "The plugin release that last compiled this vault. Where it does not match the installed plugin, the cycle reports a migration notice rather than compiling on."
+    },
+    "house_language": {
+      "type": "string",
+      "pattern": "^[a-z]{2}$",
+      "description": "ISO 639-1. The wiki is monolingual. Derived once from the sources, asked where they disagree, en by default. Changing it later means recompiling the wiki."
+    },
+    "author": {
+      "type": "string",
+      "description": "The person's name or initials, used as the actor in a [!note] callout. Asked for and written here rather than hardcoded, so the system stays usable on any vault."
+    },
+    "source_contexts": {
+      "type": "array",
+      "description": "How the sources view groups the source layer.",
+      "items": {
+        "type": "object",
+        "required": ["path"],
+        "properties": {
+          "path": { "type": "string" },
+          "group_by": { "enum": ["child", "self"] }
+        }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "description": "What the system may read. Silence fails closed: a missing or empty config reads as no rules and therefore no folder in scope.",
+      "properties": {
+        "ignore": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Never knowledge: scratch, staging, infrastructure. Never counted, asked about, or read."
+        },
+        "rules": {
+          "type": "array",
+          "description": "Precedence is longest path first, and an explicit tag on a note always wins. A path no rule touches is undecided, which is reported as a decision owed rather than treated as out of scope.",
+          "items": {
+            "type": "object",
+            "required": ["path", "in_scope"],
+            "properties": {
+              "path": { "type": "string" },
+              "in_scope": { "type": "boolean" },
+              "default": {
+                "enum": ["#to-process", "#excluded"],
+                "description": "The declaration made once for every file under this path. A folder in scope with no default leaves its notes undeclared."
+              },
+              "note": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "harvest": {
+      "type": "object",
+      "description": "Project logs worked for dated decisions only, a narrower declaration than #to-process. Declared per project cluster at the sweep rather than assumed from silence.",
+      "properties": {
+        "mode": { "const": "decision-harvest" },
+        "declared": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+        "paths": { "type": "array", "items": { "type": "string" } },
+        "note": { "type": "string" }
+      }
+    }
+  },
+  "additionalProperties": true
+}

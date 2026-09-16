@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mattiasdh/augment_plugin/schema/history-entry.json",
+  "title": "History entry",
+  "description": "One line of history.jsonl, the append-only ledger. Every write reaches this file first, in the order it happened, which is what makes the index fully derivable: replay the history, keep the last entry per id. This schema must accept every line the ledger has ever carried, not only the current shape, because the file is never rewritten. That is why it admits date-only run stamps and the retired declaration kinds below.",
+  "oneOf": [
+    {
+      "$ref": "https://github.com/mattiasdh/augment_plugin/schema/index-entry.json"
+    },
+    {
+      "$ref": "#/$defs/run"
+    },
+    {
+      "$ref": "#/$defs/tooling"
+    },
+    {
+      "$ref": "#/$defs/event"
+    }
+  ],
+  "$defs": {
+    "run": {
+      "type": "object",
+      "description": "An audit trail of what ran when. Compaction skips these, so the index holds notes and sources and nothing else. The id is <op>-run-<date>, suffixed with a letter when the same day already carries a run of that operation.",
+      "required": [
+        "id",
+        "kind",
+        "ran"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "By convention <op>-run-<date>, suffixed with a letter for a second run of the same operation on one day. Not patterned here: markers written before the convention settled carry other shapes, and the ledger is never rewritten. The convention is enforced where entries are written, not where they are read back."
+        },
+        "kind": {
+          "type": "string",
+          "pattern": "_run$"
+        },
+        "ran": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}( \\d{2}:\\d{2})?$",
+          "description": "Date and time. Markers written before the time was recorded carry the date alone, and stay valid because the ledger is never rewritten."
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "tooling": {
+      "type": "object",
+      "description": "Tooling state that is not a note, a source or a run. The restyle queue is the live case: while a pass is open it is the only record of which notes have been rebuilt, and it retires by tombstone once the queue empties. The scope and config kinds are retired declarations, written before the person's settings moved to config.yaml, kept because history is append-only.",
+      "required": [
+        "id",
+        "kind"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "restyle",
+            "scope",
+            "config"
+          ]
+        },
+        "declared": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "retired": {
+          "const": true
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "event": {
+      "type": "object",
+      "description": "An event recorded against a source rather than a state for it. A comment is the live case: it records that a marked passage was added, when, by which actor, and which wiki notes the resulting hash drift re-staled.",
+      "required": [
+        "id",
+        "event",
+        "date"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "event": {
+          "enum": [
+            "comment"
+          ]
+        },
+        "date": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "by": {
+          "type": "string",
+          "description": "The producer/version actor, as elsewhere."
+        },
+        "restales": {
+          "description": "Wiki notes marked stale by the induced hash drift."
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

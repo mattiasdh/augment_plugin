@@ -1,0 +1,26 @@
+{
+  "name": "augment-plugin",
+  "owner": {
+    "name": "Mattias De Hertogh",
+    "url": "https://github.com/mattiasdh"
+  },
+  "description": "Marketplace for the augment intelligence-augmentation vault plugin.",
+  "plugins": [
+    {
+      "name": "augment",
+      "source": "./",
+      "description": "Maintains an intelligence-augmentation vault: person-authored sources, a model-compiled wiki, and the cycle that keeps the two in step.",
+      "version": "2026.9.16",
+      "author": {
+        "name": "Mattias De Hertogh"
+      },
+      "license": "MIT",
+      "keywords": [
+        "knowledge-management",
+        "intelligence-augmentation",
+        "obsidian",
+        "wiki"
+      ]
+    }
+  ]
+}
