@@ -11,6 +11,7 @@ log. That curated tail is preserved untouched. Run from the vault root.
 import glob, json, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _gen_util import stamp, load_config, scope_of, undecided_folders, display_path
+from detect_changes import is_source_entry, likely_rename
 from collections import Counter
 
 ROOT = sys.argv[1] if len(sys.argv) > 1 else "."
@@ -65,6 +66,18 @@ def main():
     # newly-declared folders sat fully unindexed for six days, invisible to both
     # checks (CHANGELOG 2026-08-24).
     indexed_ids = {e["id"] for e in srcs}
+    # A path that is the likely new half of a pending rename is excluded here even
+    # though it has no index entry, the same test the backlog list would otherwise
+    # apply. Without this a rename's new path surfaces as ordinary #to-process work
+    # before VERIFY confirms it, and processing it as fresh content would harvest
+    # decisions already collected under the old path a second time (found 2026-09-22,
+    # a 34-source project-folder reorganisation into year subfolders).
+    pending_rename_targets = set()
+    for e in idx:
+        if is_source_entry(e) and not os.path.exists(os.path.join(ROOT, e["id"])):
+            t = likely_rename(e["id"], e["hash"], ROOT, cfg)
+            if t:
+                pending_rename_targets.add(t)
     backlog_rows = []
     for r in scope.get("rules", []):
         if not r.get("in_scope") or r.get("default") != "#to-process":
@@ -77,7 +90,7 @@ def main():
         # Only count a file this rule actually governs; a more specific nested
         # rule may claim it instead (scope_of's longest-path precedence, CONTRACT §9).
         files = [f for f in files if scope_of(f, cfg) == "in"]
-        missing = sorted(f for f in files if f not in indexed_ids)
+        missing = sorted(f for f in files if f not in indexed_ids and f not in pending_rename_targets)
         if missing:
             backlog_rows.append((rp, missing, len(files)))
     backlog_rows.sort(key=lambda r: -len(r[1]))

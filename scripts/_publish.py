@@ -46,7 +46,7 @@ ALLOW = {
     # published file mentioning it reads as a leak. A product name is structurally
     # incapable of being a client identity here, so it is excluded permanently rather
     # than per folder.
-    "augment", "plugin", "wiki", "notes",
+    "augment", "plugin", "wiki", "notes", "skills",
 }
 
 

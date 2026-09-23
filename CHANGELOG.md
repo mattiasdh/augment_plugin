@@ -2,6 +2,18 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag.
 
+## v2026-09-23
+
+### Improvement
+
+**`detect_changes.py` reports a likely rename instead of bare `MISSING`.** Where a missing source's recorded hash matches exactly one current file under its own scope path, it now prints `LIKELY RENAME -> <path>` rather than `MISSING`. This never resolves the rename; recording one stays VERIFY's call. It only saves the sweep from re-deriving the same glob-and-hash check by hand, which an 182-file, 34-source case (2026-09-22) needed a one-off script to do.
+
+**The declared-folder backlog excludes a pending rename's new path.** Without this, a rename's new half could surface as ordinary `#to-process` work and get harvested a second time before VERIFY confirmed the rename, since the old path's `produced` list is never consulted when a different id is read as new.
+
+### Bug fix
+
+**DREAM phase 1 now states a rule for a `#processed` source that drifts with `produced: []`.** It previously had no treatment for this case: the drift-to-`#stale` rule only fires on a non-empty `produced`, and an explicit `#processed` tag sits outside PROCESS's `#to-process` scope regardless of what the content now says, so the source went invisible to every later drift too. Eight occurrences across seven cycles reconstructed the same ad hoc treatment (re-read, decide, re-stamp) from precedent each time. The phase now states it: always re-examine for extraction-worthiness, always re-stamp the hash regardless of the verdict, and report to VERIFY where the content argues for a full re-tag rather than a one-off read.
+
 ## v2026-09-16
 
 First release as a plugin. The system ran for two months as a single skill with its contract and operations living inside the vault it governed; this release separates the method from the instance and rebuilds the method around one verb per skill.

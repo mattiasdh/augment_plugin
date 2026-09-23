@@ -1,7 +1,7 @@
 {
   "name": "augment",
   "displayName": "Augment",
-  "version": "2026.9.16",
+  "version": "2026.9.23",
   "description": "Intelligence-augmentation vault: a person-authored source tree plus a model-compiled wiki of concept, entity, theme, hub and tension notes derived from it. Capture into sources, compile them into the wiki, retrieve and synthesise answers, reason against the graph, and run the nightly maintenance cycle and weekly sweep that keep the derived layer honest.",
   "author": {
     "name": "Mattias De Hertogh"
@@ -19,7 +19,7 @@
     "zettelkasten"
   ],
   "metadata": {
-    "release": "v2026-09-16",
+    "release": "v2026-09-23",
     "versioning": "Dated releases. The semver field carries the same date as year.month.day so tooling can order it; v2026-09-16 is the human form used in the CHANGELOG and the git tag."
   }
 }
