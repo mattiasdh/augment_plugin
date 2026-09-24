@@ -190,25 +190,42 @@ def main():
     # stale updated: (advisory). The future-date check catches a date typed ahead
     # of the work; this catches the commoner slip, a date read once at the start of
     # a session and carried across a day boundary, so a note edited today still
-    # claims yesterday. Scoped to files git records as changed *today*, because a
-    # status-only or keyword edit legitimately leaves updated: alone (CONTRACT §9)
-    # and older touches cannot be told apart from those without a per-note content
-    # hash, which the index does not keep. Advisory for that reason: it names a
-    # likely slip, it does not gate the build.
+    # claims yesterday. Scoped to files git records as changed *today*, and within
+    # those to files whose body changed today: a status, keyword or backlink edit
+    # touches only the frontmatter and legitimately leaves the stamp alone, so it is
+    # compared by content hash against the file as it stood at midnight, which the
+    # v2 hash makes a clean test of "the words changed". Advisory: it names a likely
+    # slip, it does not gate the build.
+    import subprocess
+    from hash_source import content_hash_bytes
     try:
-        import subprocess
         out = subprocess.run(["git", "log", "--since=midnight", "--format=", "--name-only"],
                              cwd=ROOT, capture_output=True, text=True, timeout=30).stdout
         touched_today = {ln.strip() for ln in out.splitlines() if ln.strip()}
+        base = subprocess.run(["git", "rev-list", "-1", "--before=midnight", "HEAD"],
+                              cwd=ROOT, capture_output=True, text=True, timeout=30).stdout.strip()
     except Exception:
-        touched_today = set()
+        touched_today, base = set(), ""
+
+    def body_changed_today(p_):
+        if not base:
+            return True
+        try:
+            old = subprocess.run(["git", "show", f"{base}:{p_}"], cwd=ROOT,
+                                 capture_output=True, timeout=30)
+            if old.returncode != 0:
+                return True                   # new today: its body is all new
+            cur = open(os.path.join(ROOT, p_), "rb").read()
+            return content_hash_bytes(old.stdout) != content_hash_bytes(cur)
+        except Exception:
+            return True
     for p_ in sorted(set(wiki_files) | set(srcs)):     # source notes carry it too
         if p_.startswith(("augment_wiki/hub/", "augment_wiki/view/")):
             continue                          # generated wholesale; write_if_changed already
                                                # holds the stamp to real content changes, so a
                                                # rename or unrelated same-day commit touching the
                                                # file is not the human slip this check looks for
-        if p_ not in touched_today:
+        if p_ not in touched_today or not body_changed_today(p_):
             continue
         try:
             fm_, _ = split_note(open(os.path.join(ROOT, p_), encoding="utf-8").read())
@@ -473,8 +490,25 @@ def main():
             continue
         head = open(f, encoding="utf-8", errors="replace").read()
         fm_, _ = split_note(head)
-        if "#processed" not in str(fm_.get("augment", "")):
+        aug = str(fm_.get("augment", ""))
+        if not fm_:
+            # A file with no fenced block may carry its declaration as bare leading
+            # lines, the form hash_source.py strips alongside the block; reading
+            # only the block flagged correctly tagged files as untagged.
+            for ln in head.splitlines():
+                if not re.match(r"(Status|augment|wiki|created|updated|assisted_by):", ln):
+                    break
+                if ln.startswith("augment:"):
+                    aug = ln
+        if "#processed" not in aug:
             advisories.append(f"index says #processed, source's augment: does not: {i}")
+        # The `wiki:` backlink line mirrors `produced` the way the tag does, and is
+        # kept in step by sync_backlinks.py; a disagreement is a sync not yet run.
+        want = sorted({os.path.splitext(os.path.basename(p))[0]
+                       for p in (e.get("produced") or [])})
+        have = sorted(re.findall(r"\[\[([^\]|]+)", str(fm_.get("wiki", "")))) if fm_ else []
+        if want != have:
+            advisories.append(f"wiki: backlinks disagree with produced (run sync_backlinks.py): {i}")
 
     # fragile source filenames (advisory: renaming a source is a human/VERIFY act)
     for p in srcs:

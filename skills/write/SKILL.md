@@ -24,7 +24,7 @@ Read `rules/freshness.md` and run the check first. Read `rules/write-flow.md` as
 
 **Set the declaration, and nothing else of the system's.** `augment:` carries the state tag, with `created:` written once at first write and `updated:` on every later edit, both read from the clock rather than typed. The person's own frontmatter fields are read, never written or reordered.
 
-**A status write is a byte-preserving line insert.** Never a read-and-rewrite of the whole file, which can silently normalise line endings, change the content hash and re-stale everything compiled from that source.
+**A status write stays inside the frontmatter.** Never a read-and-rewrite of the whole file, which can silently normalise the body's line endings, change the content hash and re-stale everything compiled from that source. The block itself is outside the hash, so giving a bare-form file a fenced block is safe.
 
 **Identify every addition at the moment it is written.** `assisted_by:` in frontmatter as `<producer>/<version>`, read from the runtime, never a bare product name and never copied from an example. Model-written prose sits in a `> [!ai]` callout; the person's own transcribed words sit in `> [!note]`. Neither is ever mistaken for the other, because the next compilation calibrates them differently.
 

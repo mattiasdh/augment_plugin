@@ -76,7 +76,7 @@ Merge into the entity's decisions block, appending lines not already present, ke
 
 **Extract nothing else.** No concept, no method, no claim. If a log genuinely contains an atomic concept, that is an extend decision on a `#to-process` source and the log's scope must say so.
 
-Mark the log `#processed #linked` if a decision was harvested, byte-preservingly. A log yielding no decision stays untagged and surfaces as producing nothing.
+Mark the log `#processed #linked` if a decision was harvested, in its frontmatter. A log yielding no decision stays untagged and surfaces as producing nothing.
 
 ## Restyle
 
@@ -99,7 +99,7 @@ Link resolution and backlink upkeep are mechanical, done by pattern matching wit
 ## Never
 
 - Write into the body of a source note. Setting its declaration is metadata and is permitted; nothing else in the source may be touched.
-- Rewrite a source file to change its status. A status write is a byte-preserving line insert that keeps the file's existing bytes and newline convention.
+- Rewrite a source file to change its status. A status write edits the frontmatter block only, giving a bare-form file a fenced block if it needs one, and never reads and rewrites the body, whose bytes and newline convention the hash depends on.
 - Process an `#excluded` source.
 - Rewrite a body during extend. Mark it stale and let rebuild do it.
 - Invent a link, or a link context, to fill a gap in the sources.

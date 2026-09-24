@@ -23,6 +23,8 @@ Deterministic implementations, **run and never read into context**. Every one ta
 | `undo_run.py` | Reverts every write a run made. `--dry-run` first; `--only slugA::slugB` for a single one. |
 | `dismiss_pairs.py` | Appends declined convergence pairs to the sidecar, so a rejected pair does not resurface. |
 | `restyle_queue.py` | Tracks which notes a writing-rule change has already been rebuilt under. |
+| `sync_backlinks.py` | Keeps each cited source's `wiki:` frontmatter line in step with `produced`. Run after compaction; frontmatter only, hash-checked per file. |
+| `migrate_hash_v2.py` | One-time: re-stamps a vault's ledger from the pre-v2026-09-24 hash to the frontmatter-excluding one. Dry run by default; refuses while any source has drifted. |
 
 ## Generators
 

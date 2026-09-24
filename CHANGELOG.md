@@ -2,6 +2,24 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag.
 
+## v2026-09-24
+
+### Improvement
+
+**The content hash excludes the frontmatter whole.** It used to exclude five named lines, which made every metadata write a hazard: a status write had to be a byte-exact line insert, and giving a bare-form file a fenced block shifted its hash, which happened three times, once reaching the ledger before it was caught. Now the body alone is hashed, so how a source's metadata is written stops mattering. Existing vaults re-stamp once with `migrate_hash_v2.py`.
+
+### New feature
+
+**A cited source carries its backlinks.** `sync_backlinks.py`, run by the nightly cycle after compaction, keeps a `wiki:` line under `augment:` naming the notes that cite the source, mirroring the index as `#linked` does; conformance advises where the two disagree.
+
+### Bug fix
+
+**Conformance reads the bare declaration form**, which it used to flag as untagged, and **its stale-stamp advisory ignores metadata-only edits**, compared by content hash against the file as it stood at midnight, so a status or backlink write no longer reads as the person forgetting to update `updated:`.
+
+### Migrating
+
+Run the cycle first, so no source has drifted, then `migrate_hash_v2.py <vault>` as a dry run, `--apply`, `compact_index.py`, and `sync_backlinks.py`. `detect_changes.py` should report zero drift both after the migration and after the backlinks are written; the second is the test that the writer touched frontmatter only.
+
 ## v2026-09-23
 
 ### Improvement

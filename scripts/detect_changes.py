@@ -9,9 +9,8 @@ a reimplemented hash silently disagrees on line-ending or trailing-newline
 handling and raises false staleness, the exact CONTRACT §9 trap; this reuses
 `hash_source.content_hash`, the one canonical implementation.
 
-Declaration-only edits do not drift: the canonical hash already excludes the
-`Status`, `updated` and `assisted_by` lines, so retagging a source is not a
-change.
+Metadata edits do not drift: the canonical hash excludes the frontmatter
+whole, so retagging a source or writing its backlinks is not a change.
 
 A missing source whose hash matches a current file elsewhere under its own
 scope path is reported `LIKELY RENAME`, not bare `MISSING`, so a sweep does

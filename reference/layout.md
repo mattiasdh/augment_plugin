@@ -42,7 +42,7 @@ VAULT/
 
 Two rules bind the tree.
 
-**Links only flow upward.** Wiki notes cite sources; sources never link out to the wiki. Stated explicitly because the model over-links otherwise.
+**Links only flow upward.** Wiki notes cite sources; a source's body never links out to the wiki. Stated explicitly because the model over-links otherwise. The one exception is the system's own `wiki:` backlink line in a source's frontmatter (`statuses.md`), which mirrors the index rather than asserting anything, and which only a script writes.
 
 **The address is a commitment.** The model files to `_inbox/`; the person assigns the address in whatever scheme the tree uses.
 

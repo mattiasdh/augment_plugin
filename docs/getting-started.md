@@ -28,7 +28,7 @@ Everything else is reading and asking. `/augment:answer` retrieves or synthesise
 
 **You never edit a wiki note.** It is compiled output and the next build overwrites it. If a note is wrong, `/augment:write` files a correction as a source, which outranks what it corrects and improves every future compilation rather than one paragraph. If a source is merely incomplete, the same skill attaches a marked comment to it in place.
 
-**You never lose an edit you made in your own notes.** The system writes a status line on a source and nothing else, byte-preservingly, and never touches a word you wrote.
+**You never lose an edit you made in your own notes.** The system writes into a source's frontmatter and nothing else, and never touches a word you wrote. Two lines are its own: `augment:`, the source's status, and on a source the wiki cites, `wiki:` directly under it, listing the notes that cite it, so you can follow a source to what was made of it without leaving your editor. Neither line counts toward the content hash, so neither ever makes the wiki rebuild.
 
 ## First-run checklist
 

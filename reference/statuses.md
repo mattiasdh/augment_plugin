@@ -19,7 +19,13 @@ The status carries two dimensions so both are filterable at a glance: a **lifecy
 
 `#excluded` is the confidentiality escape hatch. Client-sensitive material is excluded by declaration, not by hoping the compiler behaves.
 
-**Writing a source's `augment:` field is metadata, not a content edit.** The rule that the system never writes into a source governs the body, the words the person wrote, not the status line. A status line is excluded from the content hash, so setting it changes nothing the wiki depends on, and setting it must still be byte-preserving.
+**Writing a source's frontmatter is metadata, not a content edit.** The rule that the system never writes into a source governs the body, the words the person wrote, not the block above it. The frontmatter is excluded from the content hash whole, so setting a status changes nothing the wiki depends on. Write it in a fenced `---` block; a file carrying only bare declaration lines, the older form, is given a block on its next write, which the hash does not see.
+
+## Backlinks
+
+**A cited source carries a `wiki:` line directly under `augment:`, naming the notes that cite it**, as wikilinks in the same form a wiki note uses for its own `sources:`. It mirrors the index's `produced` list exactly as `#linked` mirrors whether that list is empty, and exists for the same reason: so the person can see from inside the source, in any editor, what the wiki made of it. A source nothing cites carries no line, since `#unlinked` on the line above already says so.
+
+The line is written by `scripts/sync_backlinks.py`, never by hand and never by a compiling operation directly: the cycle runs it after compaction, and it adds, rewrites or removes the line wherever the mirror has fallen out of step. It is the one downward link a source carries, and it is the system's, in the system's own block, which is why it does not breach the upward-only rule in `layout.md`.
 
 ## Renames and deletions
 

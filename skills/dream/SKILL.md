@@ -105,6 +105,12 @@ A pair the cycle rules out, or that the sweep declines, is appended to the dismi
 
 **7. Regenerate.** The index is already current, so this phase only rebuilds the hubs, views and theme bodies from it: the views first, then each theme's member list from the keyword back-references, then the hubs. All of it is mechanical and overwrites its output wholesale, so a hand edit to a hub, a view or a theme body does not survive. Theme notes are never created or deleted here, since minting and retiring a theme are curation decisions; the script only refills the bodies of themes that exist. A view is written even when empty, so its link never dangles.
 
+Then bring the sources' backlink lines into step with the compacted index, so a source that gained, lost or changed a citing note tonight says so in its own frontmatter by morning. This writes into the source layer, and is autonomous only because it is the same class of write as the status tag: frontmatter only, a mirror of the index rather than a judgement, and refused by the script wherever it would move a content hash.
+
+```
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sync_backlinks.py" <vault>
+```
+
 **8. Report.** A grouped list for the sweep, critical errors first, then conformance, then **what the cycle wrote unattended**, then the rest, each finding with its proposed action and enough context to decide without opening the file. No prose.
 
 **The applied-writes section is the audit surface, and it is not optional.** One line per autonomous write, naming the note that gained the tag, what it gained and the one-sentence reason, under the run id the undo script takes. The person's work at the sweep is to scan those lines and say undo that one, which is strictly less than approving each in advance and is the only thing standing between an autonomous cycle and a graph nobody is reading. **A cycle that applies writes and does not list them has broken the trade that let it apply them at all.**
