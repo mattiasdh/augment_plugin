@@ -4,7 +4,7 @@
   "version": "2026.9.24",
   "description": "Intelligence-augmentation vault: a person-authored source tree plus a model-compiled wiki of concept, entity, theme, hub and tension notes derived from it. Capture into sources, compile them into the wiki, retrieve and synthesise answers, reason against the graph, and run the nightly maintenance cycle and weekly sweep that keep the derived layer honest.",
   "author": {
-    "name": "Mattias De Hertogh"
+    "name": "Mattias D'Hooghe"
   },
   "repository": "https://github.com/mattiasdh/augment_plugin",
   "license": "MIT",

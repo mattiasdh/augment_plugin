@@ -1,7 +1,7 @@
 {
   "name": "augment-plugin",
   "owner": {
-    "name": "Mattias De Hertogh",
+    "name": "Mattias D'Hooghe",
     "url": "https://github.com/mattiasdh"
   },
   "description": "Marketplace for the augment intelligence-augmentation vault plugin.",
@@ -12,7 +12,7 @@
       "description": "Maintains an intelligence-augmentation vault: person-authored sources, a model-compiled wiki, and the cycle that keeps the two in step.",
       "version": "2026.9.24",
       "author": {
-        "name": "Mattias De Hertogh"
+        "name": "Mattias D'Hooghe"
       },
       "license": "MIT",
       "keywords": [
