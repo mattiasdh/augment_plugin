@@ -75,7 +75,7 @@ def main():
     pending_rename_targets = set()
     for e in idx:
         if is_source_entry(e) and not os.path.exists(os.path.join(ROOT, e["id"])):
-            t = likely_rename(e["id"], e["hash"], ROOT, cfg)
+            t = likely_rename(e["id"], e["hash"], ROOT, cfg, {x["id"] for x in idx})
             if t:
                 pending_rename_targets.add(t)
     backlog_rows = []

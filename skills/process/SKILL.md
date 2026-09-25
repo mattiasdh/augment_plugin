@@ -46,7 +46,15 @@ Checks 1 and 2 exist because a composed link reads exactly like a considered one
 
 **5. Reject label-only items.** A concept must state what the idea is and by what mechanism it works. An entity must state what role it plays in the archive and what it connects. A unit answering neither test is a label, so drop it. For entities, resist biography: only what a source establishes belongs in the note, and general knowledge no source supports is a fidelity breach. A source that only enumerates named tools or links rarely supports a standalone concept and usually contributes as a secondary source to an entity note.
 
-**6. Check existence.** Search the wiki for the concept. Prefer extending an existing note over creating a near-duplicate. Where uncertain, say so rather than guessing, since a wrong merge costs more than a flagged doubt.
+**6. Check existence.** Search the wiki for the concept, and score the candidate against it before writing anything:
+
+```
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/similar_notes.py" <vault> --title "<candidate title>" --text "<drafted opening>"
+```
+
+Pass the drafted opening, not the title alone: a title under-reads, since a different word form (under-occupied, occupancy) shares no token. A note scored LIKELY SAME is read before anything is written. The score informs the judgement and never replaces it, and a low score shows only that the wording is new.
+
+Prefer extending an existing note over creating a near-duplicate. Where uncertain, say so rather than guessing, since a wrong merge costs more than a flagged doubt.
 
 **7. Write or extend.** A new unit becomes a new note in its type's body shape, `#current`. An existing concept gaining a new source gets the citation added and is marked `#stale`, because its input set changed. A hub gaining a new source gets the link and an incremented unincorporated count, and is not marked stale.
 

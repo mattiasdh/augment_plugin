@@ -17,8 +17,10 @@ scope path is reported `LIKELY RENAME`, not bare `MISSING`, so a sweep does
 not have to re-derive the same glob-and-hash check by hand every time a
 folder gets reorganised. This never resolves the rename; recording one stays
 VERIFY's call (§9), never a guess. It only saves the hand check, and only
-where the match is unambiguous, exactly one same-basename candidate with the
-matching hash; anything else, zero matches or more than one, reports plain
+where the match is unambiguous: exactly one same-basename candidate with the
+matching hash, or, when no file keeps the basename, exactly one unindexed file
+under the scope path carrying the hash (a move that also renamed, found
+2026-09-25). Anything else, zero matches or more than one, reports plain
 `MISSING` and leaves the judgement untouched.
 
 A source the person has removed is recorded `status: deleted` in the index, and
@@ -65,14 +67,28 @@ def scope_root(path, config):
     return best or path.split("/")[0]
 
 
-def likely_rename(missing_id, missing_hash, root, config):
-    """The single current file, if any, sharing `missing_id`'s basename under its
-    scope path and its recorded hash. None where the match is not unambiguous."""
+def likely_rename(missing_id, missing_hash, root, config, indexed=None):
+    """The single current file, if any, carrying `missing_id`'s recorded hash under
+    its scope path. None where the match is not unambiguous.
+
+    A same-basename match is tried first. When there is none, a move that also
+    renamed the file (`26-06 X.md` to `C26-06 X/C26-06 X.md`) is found by its
+    content hash alone, among files under the same scope path that the index
+    does not already know, since an indexed file with the same body is a
+    duplicate of another source rather than this one's new home."""
     base = os.path.basename(missing_id)
     search = os.path.join(root, scope_root(missing_id, config))
     cands = [p for p in glob.glob(os.path.join(search, "**", base), recursive=True)
              if os.path.isfile(p)]
     matches = [p for p in cands if content_hash(p) == missing_hash]
+    if len(matches) == 1:
+        return os.path.relpath(matches[0], root)
+    if matches:
+        return None
+    known = indexed or set()
+    matches = [p for p in glob.glob(os.path.join(search, "**", "*.md"), recursive=True)
+               if os.path.isfile(p) and os.path.relpath(p, root) not in known
+               and content_hash(p) == missing_hash]
     if len(matches) == 1:
         return os.path.relpath(matches[0], root)
     return None
@@ -98,7 +114,8 @@ def main():
     for i, old, new, prod in drift:
         print(f"DRIFT {old} -> {new}  {i}  produced={prod}")
     for e in missing:
-        renamed_to = likely_rename(e["id"], e["hash"], ROOT, config)
+        renamed_to = likely_rename(e["id"], e["hash"], ROOT, config,
+                                   {x["id"] for x in idx})
         if renamed_to:
             print(f"LIKELY RENAME -> {renamed_to}  {e['id']}")
         else:

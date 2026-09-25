@@ -132,6 +132,12 @@ STOP = set((
     "het de een van en op te met voor als is zijn wordt worden dat die deze niet ook naar aan bij uit door om over "
     "maar want dus zoals tussen elke alle deze hun hij zij wij "
 ).split())
+# The procedure body shape's own scaffolding (note-shape.md: Goal, Preconditions,
+# Steps, Output). Every procedure carries these words by construction, so they
+# inflated the cosine between unrelated procedures and kept one generic cluster
+# resurfacing for five nights (2026-09-25, VERIFY). Measured against every ruling
+# on record: two more confirmed pairs clear the floor, two fewer declined ones do.
+STOP |= set("goal goals precondition preconditions step steps input inputs output outputs procedure".split())
 
 LINK = re.compile(r"^-\s+(related|example_of|contradicts)\s+\[\[([^\]|]+)")
 KEYWORDS = re.compile(r"^Keywords:\s*(.*)$")

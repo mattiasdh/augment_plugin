@@ -2,6 +2,16 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag.
 
+## v2026-09-26
+
+### Improvement
+
+**A near-duplicate is caught before it is minted, not after.** `similar_notes.py` scores a candidate's title and drafted opening against every note with the relations view's own TF-IDF, and PROCESS step 6 and MINT step 2 now run it. The near-duplicate that reached the index on 2026-09-17 scores 0.468 against its original, well past the 0.30 LIKELY SAME line.
+
+**A move that also renamed the file is detected.** When no file keeps the missing source's basename, `detect_changes.py` falls back to a single unindexed file with the same content hash under the same scope path, and still refuses anything ambiguous.
+
+**Procedure-template words no longer count as shared content.** Goal, preconditions, steps and output are in every procedure by construction and kept one generic cluster resurfacing for five nights. Measured against every ruling on record, two more confirmed pairs clear the candidate floor and two fewer declined ones do.
+
 ## v2026-09-25
 
 ### New feature

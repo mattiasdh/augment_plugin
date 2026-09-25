@@ -25,7 +25,15 @@ Read `reference/note-shape.md` and `reference/links.md` before writing, and `rul
 
 A node with a real claim to make is a concept; a node that only gathers other notes is a theme. Where both are true, the sourced claim is the concept and the theme is the bare anchor beside it.
 
-**2. Existence check first.** Confirm the node does not already exist under another name. If it does, stop and point to it rather than minting a near-duplicate. This is the judgement most worth the thinking, since it decides conceptual identity rather than string similarity.
+**2. Existence check first.** Confirm the node does not already exist under another name, scoring the candidate before writing:
+
+```
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/similar_notes.py" <vault> --title "<candidate title>" --text "<drafted opening>"
+```
+
+Pass the drafted opening, not the title alone: a title under-reads, since a different word form (under-occupied, occupancy) shares no token. A note scored LIKELY SAME is read before anything is written. The score informs the judgement and never replaces it, and a low score shows only that the wording is new.
+
+If it does exist, stop and point to it rather than minting a near-duplicate. This is the judgement most worth the thinking, since it decides conceptual identity rather than string similarity.
 
 **3. Establish it from the sources.** Look past the wiki: reach the source layer through the `sources` view and read the actual files, including the processed-but-unlinked ones, because the material establishing a requested node is often exactly what no earlier consolidation extracted. Assemble the body from what those sources say, every sentence cited. Skip this step for a theme.
 
