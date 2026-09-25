@@ -2,6 +2,24 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag.
 
+## v2026-09-25
+
+### New feature
+
+**The vault is reachable from Claude Desktop's Chat tab, at full parity.** Chat has no shell, so a Tier 2 (`rules/surfaces.md`) works through two MCP servers on the person's machine. Obsidian's Local REST API reads, searches and writes whole notes, and runs Obsidian Git for pull and commit. `augment-runner`, new and bundled in the plugin, runs the pinned scripts beside the vault, appends to the ledger and holds scratch files. Every operation available in Tier 1 is available there, and the rule maps each one. Setup is in `docs/getting-started.md`.
+
+**The tier is confirmed before any vault work, and a missing one stops the work.** In Code and Cowork, `detect_tier.py` runs as a SessionStart hook and puts one line in context. In Chat, which runs no hooks, the first vault operation of a conversation probes. When neither tier is reachable, the skill names the missing piece and asks the person to connect before going on. A `vault_path` setting lets a Claude Code session opened on another project reach the vault as Tier 1, and the freshness hook follows it there.
+
+**`source_write.py` is the one writer into a person's source, in both tiers.** It sets a system key (status, `created:`, `updated:`, `assisted_by:`) and refuses a write that would move the content hash. It also places a `[!ai]` or `[!note]` callout, and refuses one that would alter existing text. Sessions used to improvise these writes inline, and a surface without a shell could not make them byte-exactly at all.
+
+### Improvement
+
+**Conformance reports a ledger that lost lines.** `ledger_guard.py` checks that `history.jsonl` stayed append-only across the last 200 commits, merges included. The case is not hypothetical. On 2026-09-24 an editor-side merge kept its local tree and dropped a pushed PROCESS pass, twelve ledger lines with it, and no other check could see the loss, because the index recompacted cleanly from what was left. It is an advisory, so the nightly cycle still completes. An entry carrying `"acknowledges": "<sha>"` clears a loss once it is repaired.
+
+### Bug fix
+
+**`rules/write-flow.md` gave `rewrite_check.py` the wrong arguments.** It takes the rewritten file and an optional revision, `HEAD` by default, not an old and a new file.
+
 ## v2026-09-24
 
 ### Improvement

@@ -11,6 +11,8 @@ The person does not edit wiki notes. Corrections travel through the sources, nev
 
 ## Before anything
 
+Confirm the tier before anything else, as `rules/surfaces.md` sets out: trust the session-start line in Code and Cowork, probe once per conversation in Chat, and stop and ask the person to connect when no tier is reachable. In Tier 2 every script call, file operation and git step below goes through that rule's table.
+
 **Run the freshness check first, on every operation, including read-only ones.**
 
 ```
@@ -41,7 +43,7 @@ Each skill loads the rules and reference fragments it needs and nothing else. Do
 
 These bind every skill and are restated in each. They exist because breaking one is not recoverable by the next cycle.
 
-**Never write prose into a source note.** Sources are the person's authorship. The `augment:` declaration line and frontmatter may be set; the body may not, and a status write is a byte-preserving line insert, never a read-and-rewrite that could normalise line endings.
+**Never write prose into a source note.** Sources are the person's authorship. The `augment:` declaration line and frontmatter may be set; the body may not. Every system write into a source goes through `scripts/source_write.py`, in either tier, never a read-and-rewrite that could normalise line endings.
 
 **Never write an unsourced sentence into the wiki.** Body text and link context alike, everything cites a source.
 
@@ -61,6 +63,6 @@ Commit and push to the vault's default branch, but only when the operation actua
 
 New source notes default to `_inbox/` unless the person names a home in the source tree. An inbox note is unaddressed and out of scope until they assign it one.
 
-Scripts under `${CLAUDE_PLUGIN_ROOT}/scripts/` are deterministic and are run, never read into context. Reading or reimplementing one wastes tokens and reintroduces the bug it was written to fix. Read a script only to debug the script itself.
+Scripts under `${CLAUDE_PLUGIN_ROOT}/scripts/` are deterministic and are run, never read into context: through the shell in Tier 1, through `augment-runner` in Tier 2. Reading or reimplementing one wastes tokens and reintroduces the bug it was written to fix. Read a script only to debug the script itself.
 
 Where a reply's own prose is the deliverable, a drafted chapter, email or summary, the writing rules in `rules/write-flow.md` bind it exactly as they bind a wiki note.

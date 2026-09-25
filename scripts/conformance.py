@@ -687,6 +687,19 @@ def main():
         advisories.append(
             "config.yaml declares no plugin_version, so a release change cannot be detected")
 
+    # ledger loss (advisory). history.jsonl is append-only, and a merge that kept
+    # one side's tree drops the other side's lines without a conflict marker; the
+    # index recompacts cleanly from what is left, so nothing else would show it.
+    # Advisory so an unattended cycle still completes, but it heads the sweep:
+    # re-record what was lost, then acknowledge the commit (ledger_guard.py).
+    try:
+        from ledger_guard import losses
+        for c, p, k in losses(ROOT, 200):
+            advisories.insert(0, f"LEDGER LOSS, {k} history line(s) of parent {p[:7]} "
+                                 f"missing after commit (run ledger_guard.py): {c[:7]}")
+    except Exception:
+        pass    # no git here: nothing to compare against
+
     if advisories:
         # Collapsed by kind past a threshold. An advisory class that fires on a
         # hundred files is reporting one thing, not a hundred, and printing it a

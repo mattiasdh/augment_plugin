@@ -24,6 +24,32 @@ The **sweep** runs weekly and is the only part needing you. It should take about
 
 Everything else is reading and asking. `/augment:answer` retrieves or synthesises, `/augment:discuss` argues back.
 
+## Using it from Claude Desktop
+
+The same plugin loads in the Desktop Chat tab: in Customize, Plugins, add `mattiasdh/augment_plugin` from a repository. Chat has no shell, so it reaches the vault through Obsidian, running on the same Mac, and through `augment-runner`, a small local server the plugin starts to run its scripts there. That is Tier 2 in `rules/surfaces.md`, and it can do everything Tier 1 can. Set it up once:
+
+1. **Obsidian, Local REST API.** Install it, turn its MCP server on, and leave it bound to `127.0.0.1` on the HTTPS port. Copy the API key.
+2. **Trust its certificate.** Node refuses a self-signed certificate, and the MCP bridge runs on Node. Save the certificate once, with `curl -sk https://127.0.0.1:27124/obsidian-local-rest-api.crt -o ~/.config/obsidian/local-rest-api.crt`. Then check that `curl --cacert ~/.config/obsidian/local-rest-api.crt https://127.0.0.1:27124/` succeeds without `-k`.
+3. **Register it in Desktop.** In `claude_desktop_config.json`:
+
+   ```json
+   "obsidian": {
+     "command": "npx",
+     "args": ["-y", "mcp-remote", "https://127.0.0.1:27124/mcp/", "--header", "Authorization:${OBSIDIAN_AUTH}"],
+     "env": {
+       "OBSIDIAN_AUTH": "Bearer <API key>",
+       "NODE_EXTRA_CA_CERTS": "/Users/<you>/.config/obsidian/local-rest-api.crt"
+     }
+   }
+   ```
+
+   Keep `Authorization:${OBSIDIAN_AUTH}` without a space; some Desktop versions split arguments on spaces. Restart Desktop fully after editing.
+4. **Obsidian Git.** Turn on pull on startup and pull before push, and use the merge strategy. It is the only thing that commits in Tier 2. If it ever resolves a conflict by keeping your copy, conformance reports the lost ledger lines as a `LEDGER LOSS` for the sweep.
+5. **The plugin's `vault_path`.** Set it to the vault folder, the one holding `augment_wiki/config.yaml`. The same setting lets a Claude Code session in another project reach the vault as Tier 1.
+6. **Python.** The scripts need Python 3 and PyYAML for the `python3` Desktop finds, usually `/usr/bin/python3`: run `python3 -m pip install --user pyyaml`. `augment-runner`'s `status` names the interpreter it used and says whether PyYAML is present.
+
+A Chat conversation checks all of this at its first vault request, and if anything is missing it says which piece and waits for you to connect it.
+
 ## What you never do
 
 **You never edit a wiki note.** It is compiled output and the next build overwrites it. If a note is wrong, `/augment:write` files a correction as a source, which outranks what it corrects and improves every future compilation rather than one paragraph. If a source is merely incomplete, the same skill attaches a marked comment to it in place.

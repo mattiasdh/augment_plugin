@@ -7,6 +7,8 @@ description: Think a question through against the vault. Use when the person wan
 
 The system's only human-facing thinking operation, and the place the person's own reasoning load actually lives. **Exploration with the wiki, not review of it.**
 
+Confirm the tier before anything else, as `rules/surfaces.md` sets out: trust the session-start line in Code and Cowork, probe once per conversation in Chat, and stop and ask the person to connect when no tier is reachable. In Tier 2 every script call, file operation and git step below goes through that rule's table.
+
 Read `rules/freshness.md` and run the check first. Reasoning built on a clone behind the vault argues from positions the vault has moved past, and the argument's own coherence hides it.
 
 Exploration is not confined to the notes. The wiki is a point of entry into the sources, so follow a thread down into the sources a note cites and the other sources in the same context, including the processed-but-unlinked ones, whenever the discussion turns on detail the notes do not carry. Keep the layers distinct in what you say, so raw source is not mistaken for settled synthesis.

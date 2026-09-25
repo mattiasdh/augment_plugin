@@ -7,6 +7,8 @@ description: Retrieve from the vault and answer from it. Use when the person ask
 
 Two modes over one retrieval. **Retrieve returns notes; synthesise returns an answer.** Ask which is wanted only when the request genuinely does not say; a request for "notes on X" wants the first, "what do we know about X" the second.
 
+Confirm the tier before anything else, as `rules/surfaces.md` sets out: trust the session-start line in Code and Cowork, probe once per conversation in Chat, and stop and ask the person to connect when no tier is reachable. In Tier 2 every script call, file operation and git step below goes through that rule's table.
+
 Read `rules/freshness.md` and run the check before retrieving. A clone behind the vault returns results that read current: notes since changed, notes since added simply absent from the set. An answer is the failure with no downstream catch, since it leaves cited and the person acts on it.
 
 ## Duties in force

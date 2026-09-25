@@ -9,6 +9,8 @@ Scheduled, unattended maintenance. It absorbs what were separately a backlog con
 
 Runs nightly or on demand. It does the machine work; `verify`, weekly, does the human work, and this skill's queue is what that sweep reads.
 
+Confirm the tier before anything else, as `rules/surfaces.md` sets out: trust the session-start line in Code and Cowork, probe once per conversation in Chat, and stop and ask the person to connect when no tier is reachable. In Tier 2 every script call, file operation and git step below goes through that rule's table.
+
 Read `reference/scope-and-index.md`, `reference/statuses.md`, `reference/links.md` and `reference/views-and-hubs.md`, plus all three files in `rules/`. Run the freshness check first.
 
 ## Duties in force

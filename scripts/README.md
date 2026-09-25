@@ -13,6 +13,8 @@ Deterministic implementations, **run and never read into context**. Every one ta
 | `release_check.py` | Typography and register on a file about to be released. |
 | `rewrite_check.py` | What a rewrite actually changed, against a revision or a section. |
 | `write_flow_register.py` | Re-asserts the writing register on a prose-shaped prompt. Hook only. |
+| `ledger_guard.py` | Whether `history.jsonl` stayed append-only across the last commits, merges included. Conformance runs it and reports a `LEDGER LOSS` advisory; an entry with `"acknowledges": "<sha>"` clears a loss already repaired. |
+| `detect_tier.py` | Which tier the session reaches the vault on (`rules/surfaces.md`). SessionStart hook; prints one context line. |
 
 ## The ledger
 
@@ -24,6 +26,7 @@ Deterministic implementations, **run and never read into context**. Every one ta
 | `dismiss_pairs.py` | Appends declined convergence pairs to the sidecar, so a rejected pair does not resurface. |
 | `restyle_queue.py` | Tracks which notes a writing-rule change has already been rebuilt under. |
 | `sync_backlinks.py` | Keeps each cited source's `wiki:` frontmatter line in step with `produced`. Run after compaction; frontmatter only, hash-checked per file. |
+| `source_write.py` | The only writer into a person's source: `set` a system key (`augment:`, `created:`, `updated:`, `assisted_by:`), hash-checked to stay unchanged, or add a `callout`, checked to alter no existing text. Both tiers use it. |
 | `migrate_hash_v2.py` | One-time: re-stamps a vault's ledger from the pre-v2026-09-24 hash to the frontmatter-excluding one. Dry run by default; refuses while any source has drifted. |
 
 ## Generators
@@ -38,5 +41,11 @@ Each rewrites one derived file and prints a one-line summary. None of them decid
 | `gen_timeline.py` | `view/timeline.md`, dated decisions per project |
 | `gen_relations.py` | `view/relations.md`, the relationship overlay and the candidate lanes |
 | `gen_verify_queue.py` | the generated half of `verify-queue.md` |
+
+## Tier 2
+
+| Script | What it does |
+|---|---|
+| `runner_mcp.py` | The `augment-runner` MCP server the plugin starts: `status`, `run_script` (any script above except the one-time migration and the hook-only register), `append_history` and `scratch_write`, run beside the vault on the person's machine for a surface with no shell. Stdlib only. |
 
 `_gen_util.py` and `_publish.py` are imported, not invoked: shared front-matter, config and scope helpers, and the definition of what the plugin publishes.

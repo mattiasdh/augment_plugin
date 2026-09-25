@@ -1,7 +1,7 @@
 {
   "name": "augment",
   "displayName": "Augment",
-  "version": "2026.9.24",
+  "version": "2026.9.25",
   "description": "Intelligence-augmentation vault: a person-authored source tree plus a model-compiled wiki of concept, entity, theme, hub and tension notes derived from it. Capture into sources, compile them into the wiki, retrieve and synthesise answers, reason against the graph, and run the nightly maintenance cycle and weekly sweep that keep the derived layer honest.",
   "author": {
     "name": "Mattias D'Hooghe"
@@ -19,7 +19,27 @@
     "zettelkasten"
   ],
   "metadata": {
-    "release": "v2026-09-24",
+    "release": "v2026-09-25",
     "versioning": "Dated releases. The semver field carries the same date as year.month.day so tooling can order it; v2026-09-16 is the human form used in the CHANGELOG and the git tag."
+  },
+  "userConfig": {
+    "vault_path": {
+      "type": "directory",
+      "title": "Vault folder",
+      "description": "The folder holding augment_wiki/config.yaml. Needed wherever the session is not opened on the vault itself: Claude Code in another project, and the Desktop Chat tab (Tier 2). Leave empty when you only ever open Claude Code on the vault.",
+      "required": false
+    }
+  },
+  "mcpServers": {
+    "augment-runner": {
+      "command": "python3",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/runner_mcp.py"
+      ],
+      "env": {
+        "AUGMENT_VAULT": "${user_config.vault_path}",
+        "AUGMENT_PROJECT_DIR": "${CLAUDE_PROJECT_DIR}"
+      }
+    }
   }
 }

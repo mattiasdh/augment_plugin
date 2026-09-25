@@ -7,6 +7,8 @@ description: Write into the source layer, the person's own authoritative notes. 
 
 **Everything the system writes into the person's own layer comes through here, and none of it ever touches prose they wrote.** The wiki is compiled output, so a correction or an observation written there is destroyed by the next build and lives only in a derived file nobody treats as authoritative. Routing it to the source preserves it, attributes it, and improves every future compilation rather than one paragraph.
 
+Confirm the tier before anything else, as `rules/surfaces.md` sets out: trust the session-start line in Code and Cowork, probe once per conversation in Chat, and stop and ask the person to connect when no tier is reachable. In Tier 2 every script call, file operation and git step below goes through that rule's table.
+
 Read `rules/freshness.md` and run the check first. Read `rules/write-flow.md` as duties before drafting any prose, since this skill writes into a layer whose existing text must never be touched.
 
 ## Which mode
@@ -24,7 +26,7 @@ Read `rules/freshness.md` and run the check first. Read `rules/write-flow.md` as
 
 **Set the declaration, and nothing else of the system's.** `augment:` carries the state tag, with `created:` written once at first write and `updated:` on every later edit, both read from the clock rather than typed. The person's own frontmatter fields are read, never written or reordered.
 
-**A status write stays inside the frontmatter.** Never a read-and-rewrite of the whole file, which can silently normalise the body's line endings, change the content hash and re-stale everything compiled from that source. The block itself is outside the hash, so giving a bare-form file a fenced block is safe.
+**A status write stays inside the frontmatter.** Never a read-and-rewrite of the whole file, which can silently normalise the body's line endings, change the content hash and re-stale everything compiled from that source. The block itself is outside the hash, so giving a bare-form file a fenced block is safe. The write is `source_write.py set`, the one writer of a source's system keys in either tier; it refuses any write that would move the hash.
 
 **Identify every addition at the moment it is written.** `assisted_by:` in frontmatter as `<producer>/<version>`, read from the runtime, never a bare product name and never copied from an example. Model-written prose sits in a `> [!ai]` callout; the person's own transcribed words sit in `> [!note]`. Neither is ever mistaken for the other, because the next compilation calibrates them differently.
 
@@ -68,6 +70,8 @@ The actor for a `[!note]` is read from `author:` in `augment_wiki/config.yaml` a
 A general comment goes at the top of the body after the `# Title` line; a comment on one section goes at the head of that section after its `## heading`. Before the material it qualifies, never after it, and never woven into the prose.
 
 Keep the callout on one line. A paragraph wrapped across several `> ` lines reads as damaged in Obsidian.
+
+Write it with `source_write.py callout`, in either tier. It places the callout, keeps the file's newline convention, refuses anything that would alter existing text and stamps `updated:`. Never insert it by rewriting the file, and never through a note-writing API such as Obsidian's `vault_patch`.
 
 **3. The hash drifts, and that is the point.** A callout is body content rather than an excluded metadata line, so the stored hash no longer matches. Mark the wiki notes compiled from this source `#stale` now, with a byte-preserving write, so the queue shows the rebuild immediately rather than waiting for the nightly detect.
 

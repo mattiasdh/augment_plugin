@@ -52,10 +52,10 @@ Wiki notes need no diagnosis. Their reader is the archive's owner and the next c
 **The sequence is mechanical, and without it the rule cannot be honoured.** Extract the structural brief from the target, close it, draft into a scratch file from the cited sources alone, then open the target and splice. A pass that reads the old prose first has already become an edit, and no amount of intending otherwise converts it back. Two consecutive passes labelled as rewrites have carried over 85 and 80 percent of their sentences byte-identical while each asserted a clean read-back, so the claim is checked rather than trusted:
 
 ```
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/rewrite_check.py" <old> <new>
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/rewrite_check.py" <file> [<old-rev>]
 ```
 
-Either the carryover number is low or the label is wrong.
+It compares the spliced file against its last committed version (`HEAD` unless a revision is given). Either the carryover number is low or the label is wrong.
 
 **Keep the document in the document.** The body is plain prose at the top level. The `> [!ai]` callout carries only what is about the text: provenance, the audience diagnosis, the governing claim, what changed since the last revision. A deliverable written inside its own callout cannot be read, printed or lifted into a deck without stripping it first.
 

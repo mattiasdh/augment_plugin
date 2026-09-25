@@ -7,6 +7,8 @@ description: Generate one specific wiki node the person names, a concept, entity
 
 **The top-down counterpart to `process`.** That skill consolidates sources bottom-up and writes whatever notes they yield; this one starts from a node the person knows should exist but that consolidation has not produced, then goes and finds the sources and the relations for it.
 
+Confirm the tier before anything else, as `rules/surfaces.md` sets out: trust the session-start line in Code and Cowork, probe once per conversation in Chat, and stop and ask the person to connect when no tier is reachable. In Tier 2 every script call, file operation and git step below goes through that rule's table.
+
 Read `reference/note-shape.md` and `reference/links.md` before writing, and `rules/write-flow.md` as duties. Run the freshness check first.
 
 **One trigger arrives without the person, and the cycle acts on it without asking.** Where the nightly cycle reports an oversized anchor, a content note that seven or more notes already keyword-tag and whose members hang together, the cluster is gathering around a node nobody has written. That is this skill arriving bottom-up, answered the same way as a named request. **Unattended minting softens no guard**: no source, no node, and a node that cannot pass pre-flight is reported rather than written. The autonomy is over when the node gets made, never over what may be asserted in it.

@@ -7,6 +7,8 @@ description: Compile source notes into wiki notes. Use when new sources are wait
 
 Reads sources that resolve to `#to-process`, writes wiki notes. **The one skill that runs with nobody watching, so every rule below is a constraint rather than a preference.**
 
+Confirm the tier before anything else, as `rules/surfaces.md` sets out: trust the session-start line in Code and Cowork, probe once per conversation in Chat, and stop and ask the person to connect when no tier is reachable. In Tier 2 every script call, file operation and git step below goes through that rule's table.
+
 Read `reference/note-shape.md`, `reference/links.md`, `reference/statuses.md` and `reference/scope-and-index.md`, plus `rules/write-flow.md` as duties. Run the freshness check first.
 
 Four modes. **Extend** runs on every pass. **Rebuild** runs on notes whose input set changed. **Harvest** runs on project logs declared for it, pulling dated decisions into the project entity without minting concepts. **Restyle** runs when the writing rules change rather than the sources.
@@ -99,7 +101,7 @@ Link resolution and backlink upkeep are mechanical, done by pattern matching wit
 ## Never
 
 - Write into the body of a source note. Setting its declaration is metadata and is permitted; nothing else in the source may be touched.
-- Rewrite a source file to change its status. A status write edits the frontmatter block only, giving a bare-form file a fenced block if it needs one, and never reads and rewrites the body, whose bytes and newline convention the hash depends on.
+- Rewrite a source file to change its status. A status write edits the frontmatter block only, giving a bare-form file a fenced block if it needs one, and never reads and rewrites the body, whose bytes and newline convention the hash depends on. It is made with `source_write.py set`, never by hand or through a note-writing API.
 - Process an `#excluded` source.
 - Rewrite a body during extend. Mark it stale and let rebuild do it.
 - Invent a link, or a link context, to fill a gap in the sources.

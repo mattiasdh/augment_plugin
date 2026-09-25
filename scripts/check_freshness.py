@@ -40,6 +40,12 @@ BRANCH = "main"
 if "--branch" in sys.argv:
     BRANCH = sys.argv[sys.argv.index("--branch") + 1]
 HOOK = "--hook" in sys.argv
+# In hook mode, a session opened on another project still owes the check for the
+# vault it reaches through the plugin's vault_path setting (rules/surfaces.md).
+_SETTING = os.environ.get("CLAUDE_PLUGIN_OPTION_VAULT_PATH", "").strip()
+if HOOK and _SETTING and not _SETTING.startswith("${") and not any(
+        os.path.exists(os.path.join(ROOT, p)) for p in ("augment_wiki/config.yaml", "_augment/config.yaml")):
+    ROOT = os.path.abspath(os.path.expanduser(_SETTING))
 
 
 def in_vault(root):
