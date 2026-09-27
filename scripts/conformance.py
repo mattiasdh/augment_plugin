@@ -145,13 +145,14 @@ def source_files(config):
     """Every path that could be a source. What is *not* one comes from the vault's
     own `scope.ignore` (CONTRACT §9) rather than a list baked in here, since which
     folders are scratch and which are knowledge is a property of the vault, not of
-    the system. `augment_wiki/`, `augment_plugin/` and dotfolders are structural and
-    stay hard-coded: the wiki is derived, the plugin is method, and neither is ever
-    a source whatever the config says."""
+    the system. `augment_wiki/`, `augment_memory/`, `augment_plugin/` and dotfolders are
+    structural and stay hard-coded: the wiki is derived, memory is the model's own
+    working record, the plugin is method, and none is ever a source whatever the
+    config says."""
     out = []
     for p in glob.glob(os.path.join(ROOT, "**/*.md"), recursive=True):
         r = rel(p)
-        if r.split("/")[0] in ("augment_wiki", "augment_plugin") or r.startswith("."):
+        if r.split("/")[0] in ("augment_wiki", "augment_memory", "augment_plugin") or r.startswith("."):
             continue
         if scope_of(r, config) == "ignore":
             continue

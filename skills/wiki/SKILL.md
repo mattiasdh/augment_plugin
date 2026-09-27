@@ -1,6 +1,6 @@
 ---
 name: wiki
-description: Entry point and router for an intelligence-augmentation vault, a person-authored source tree plus a model-compiled wiki of concept, entity, theme, hub and tension notes. Use when the request concerns the vault or the wiki as a whole, when it is ambiguous which operation applies, or when the person mentions a memo, a source note, a concept or entity note, the backlog, the nightly cycle, the sweep, digesting, flagging, or asks what the archive knows about something. Routes to write, process, answer, discuss, mint, dream and verify.
+description: Entry point and router for an intelligence-augmentation vault, a person-authored source tree plus a model-compiled wiki of concept, entity, theme, hub and tension notes. Use when the request concerns the vault or the wiki as a whole, when it is ambiguous which operation applies, or when the person mentions a memo, a source note, a concept or entity note, the backlog, the nightly cycle, the sweep, digesting, flagging, or asks what the archive knows about something. Routes to write, process, answer, discuss, mint, dream and verify, and to remember, recall and activate for the memory layer.
 ---
 
 # The vault
@@ -34,6 +34,11 @@ Pull if it reports behind. A vault syncs from several directions at once (the ow
 | a specific missing concept or entity generated and wired in | `mint` |
 | the nightly cycle, the backlog, or what needs attention | `dream` |
 | the weekly sweep | `verify` |
+| to record how something is done: a tool's behaviour, a file convention, a reusable script, a working sequence | `remember` |
+| how something was done before, or whether Claude remembers a convention | `recall` |
+| to start a Chat conversation with the vault connected and memory loaded, or to go off the record | `activate` |
+
+Memory is a separate layer with its own rule, `reference/memory.md`: it records how the work is done, never what it is about, and the wiki never cites it.
 
 Ambiguous requests default to `answer`, which is read-only and cannot damage anything. Ask only when the answer would change what gets written.
 

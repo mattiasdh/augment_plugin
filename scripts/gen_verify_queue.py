@@ -129,7 +129,7 @@ def main():
     # made a folder added today indistinguishable from one passed over for months.
     def undeclared(p):
         top = p.split("/")[0]
-        if top.startswith(".") or top in ("augment_wiki", "augment_plugin"):
+        if top.startswith(".") or top in ("augment_wiki", "augment_memory", "augment_plugin"):
             return False
         return scope_of(p, cfg) == "undecided"
     undecl = [os.path.relpath(p, ROOT) for p in glob.glob(os.path.join(ROOT, "**/*.md"), recursive=True)]

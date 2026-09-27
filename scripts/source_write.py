@@ -155,7 +155,7 @@ def main():
     a = ap.parse_args()
 
     rel = os.path.normpath(a.path)
-    if rel.startswith("..") or os.path.isabs(rel) or rel.startswith("augment_wiki"):
+    if rel.startswith("..") or os.path.isabs(rel) or rel.startswith(("augment_wiki", "augment_memory")):
         print(f"REFUSED: {a.path} is not a source path inside the vault"); sys.exit(1)
     p = os.path.join(a.vault, rel)
     if not os.path.isfile(p):

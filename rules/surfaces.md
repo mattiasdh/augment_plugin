@@ -15,8 +15,8 @@
 
 Run it before the first vault operation. How often depends on the surface.
 
-- **Code and Cowork.** A SessionStart hook has already put one line in context: `AUGMENT TIER 1: …` or `AUGMENT: no vault reachable …`. Trust it for the session. Probe again only if a vault call fails.
-- **Chat.** Hooks do not run there, so the first vault operation in a conversation probes: call `augment-runner` `status`, then read `augment_wiki/config.yaml` through the Obsidian MCP. Both must succeed. Later operations in the same conversation rely on that result and re-probe only on a failure.
+- **Code and Cowork.** A SessionStart hook has already put one line in context: `AUGMENT TIER 1: …` or `AUGMENT: no vault reachable …`. Trust it for the session. A second hook has loaded the memory cards that apply (`reference/memory.md`). Probe again only if a vault call fails.
+- **Chat.** Hooks do not run there, so the first vault operation in a conversation probes, or the person starts with `activate`, which also loads the memory: call `augment-runner` `status`, then read `augment_wiki/config.yaml` through the Obsidian MCP. Both must succeed. Later operations in the same conversation rely on that result and re-probe only on a failure.
 - **Which tier.** A shell plus the vault on disk is Tier 1, and Tier 1 wins whenever it is available. No shell, with `status` READY and Obsidian answering, is Tier 2.
 
 **When the gate fails, stop and ask the person to connect.** Say which piece is missing and the one step that fixes it, then wait, and resume only when the person confirms. The missing piece is one of these:
@@ -45,6 +45,8 @@ Do not start the operation, and do not answer from memory or from an earlier rea
 | `git pull` | `command_execute` `obsidian-git:pull` |
 | `git commit` + `git push` | `command_execute` `obsidian-git:commit-and-sync` |
 | `git fetch` + compare (freshness) | `run_script check_freshness` (it fetches locally, and never pulls) |
+| Write, confirm or supersede a memory card | `run_script memory_write [".", "add", …]`, never `vault_write` into `augment_memory/` |
+| Search memory, load it at the start of a conversation | `run_script memory_search [".", words…]`; `run_script memory_context [".", "--project", name]` |
 
 **Never do these in Tier 2:**
 

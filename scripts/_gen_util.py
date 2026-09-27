@@ -88,7 +88,7 @@ def undecided_folders(root, config):
     out = []
     for name in sorted(os.listdir(root)):
         full = os.path.join(root, name)
-        if not os.path.isdir(full) or name.startswith(".") or name == "augment_wiki":
+        if not os.path.isdir(full) or name.startswith(".") or name in ("augment_wiki", "augment_memory"):
             continue
         if scope_of(name, config) != "undecided":
             continue

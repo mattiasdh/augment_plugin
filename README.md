@@ -6,7 +6,7 @@ It is not a Zettelkasten tool and not an automation. The division of labour is f
 
 ## What it gives you
 
-Seven skills plus a dispatcher, each one verb.
+Ten skills plus a dispatcher, each one verb: seven for the vault, three for its memory layer.
 
 | Skill | What it does |
 |---|---|
@@ -18,6 +18,9 @@ Seven skills plus a dispatcher, each one verb.
 | `/augment:mint` | Generates one node you name and wires it into the graph |
 | `/augment:dream` | The nightly cycle: detect, rebuild, consolidate, check, connect, regenerate, report |
 | `/augment:verify` | The weekly sweep: audit what the cycle wrote, decide what it may not decide alone |
+| `/augment:remember` | Records how the work is done: a tool's real behaviour, a file convention, a reusable script, a working sequence |
+| `/augment:recall` | Searches that memory before a task a past session may have learned from |
+| `/augment:activate` | Starts a Chat conversation with the vault connected and the memory loaded, since Chat runs no hooks |
 
 Most of the time you do not type these. The skills carry trigger phrases, so asking what the archive knows about something reaches `answer` on its own.
 
@@ -45,7 +48,7 @@ To declare it for a project rather than per user, put it in that project's `.cla
 }
 ```
 
-The plugin ships two `UserPromptSubmit` hooks, one checking that your working copy is not behind the remote and one re-asserting the writing register on a prose-shaped prompt. **Both exit silently outside a vault**, so the plugin sits quietly alongside other plugins in projects that have no wiki.
+The plugin ships two `SessionStart` hooks, one finding the vault and one loading its memory, and two `UserPromptSubmit` hooks, one checking that your working copy is not behind the remote and one re-asserting the writing register on a prose-shaped prompt. **All of them exit silently outside a vault**, so the plugin sits quietly alongside other plugins in projects that have no wiki.
 
 ## What a vault looks like
 
@@ -59,7 +62,15 @@ your-vault/
     ├── history.jsonl   append-only, every entry ever written
     ├── concept/  entity/  theme/  tension/
     └── hub/  view/     generated indexes and cross-cutting views
+└── augment_memory/     how the work is done, written by the model, never compiled
+    ├── index.md        generated, one line per active card
+    ├── card/           one memory per file
+    └── offers/         content found while working, waiting for the source layer
 ```
+
+## Memory
+
+Beside the wiki sits a small memory layer for what the model learns while working rather than what the archive says: how a connector really behaves, which file conventions the person expects, a script worth reusing. **It never duplicates the notes.** Anything that would matter without Claude is offered to the source layer as an assisted note instead, and a memory that settles leaves for a skill or the person's standing preferences at the sweep. It has no ledger, since nothing is compiled from it; git history is its record. In Code and Cowork the cards that apply are loaded at session start and again after a compaction; in Chat, `activate` loads them. The contract is `reference/memory.md`.
 
 The method lives here in the plugin and is versioned separately, so a vault carries its content and its declarations and nothing about how the system behaves. `config.yaml` records which release last compiled it.
 

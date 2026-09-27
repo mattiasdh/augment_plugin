@@ -33,6 +33,14 @@ Then, within the folders now in scope, the cycle reports how many sources carry 
 
 **2. Triage the inbox.** Propose a destination for each item; the person assigns the address. Discard what will not be returned to.
 
+**2b. Work the memory lane**, from the memory lines in the cycle's report, with `reference/memory.md` read. Each item is a decision the cycle may not take alone:
+
+- **An offer** in `augment_memory/offers/`: content found while working. Capture it through `write` into `_inbox/` or the address the person names, carrying its `assisted_by:` and its prose in an `[!ai]` callout, or discard it. Either way remove the offer file once decided, which is the one deletion in the memory layer the sweep makes, and only because the content has moved or been refused.
+- **A decay proposal**: archive the card, or keep it because the person says it still holds.
+- **A settled preference**, active and seen three or more times: propose it as a line for the person's standing preferences, which load on every surface, and archive the card once they have added it.
+- **A reused snippet or procedure**, seen three or more times: propose it as a skill, or as a script in the project it serves. The card stays until the skill exists.
+- **A card the person says is wrong**: correct it with `update`, or archive it.
+
 **3. Read the queue, conformance findings first. Then audit what the cycle wrote.** The applied-writes section lists every autonomous tag, anchor and mint since the last sweep, one line each under its run id, and conformance counts them independently and advises when a note gained six or more unattended, which is what an over-eager anchoring pass looks like from outside.
 
 Read the lines, not the count. Anything wrong comes out with the undo script, a whole night by run id or one write with `--only`, and the revert is recorded as an ordinary confirmed removal.

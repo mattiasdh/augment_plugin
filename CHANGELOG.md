@@ -2,6 +2,26 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag.
 
+## v2026-09-27
+
+### New feature
+
+**A memory layer for how the work is done, kept apart from what the archive says.** `augment_memory/` sits beside the wiki and holds cards of four types: how a tool, connector or MCP server really behaves, the person's output and file conventions, reusable snippets, and working procedures. The boundary is one test, whether the thing would still matter without Claude; anything that would is content and is offered to the source layer as an assisted note instead, so memory never duplicates the notes. It has no ledger, since nothing is compiled from it, and its generated `index.md` stays separate from the wiki's. The contract is `reference/memory.md`.
+
+**Three skills work it.** `remember` writes a card through `memory_write.py`, which refuses a near-duplicate of an active card and names it, so relearning something reinforces the existing card instead of adding a second. `recall` searches the cards with `memory_search.py`. `activate` does in Chat what the hooks do in Code: confirms the tier, checks freshness and loads the memory, and takes a conversation off the record on request.
+
+**The cards that apply are loaded at session start, and again after a compaction.** `memory_context.py` runs as a second SessionStart hook, puts cards scoped to the project the session is opened on first, then global ones, within a 6,000-character budget. It is silent outside a vault.
+
+**The cycle consolidates memory; the sweep decides what leaves it.** DREAM phase 7b regenerates the index, merges likely-same pairs by supersession and reports decay proposals and waiting offers. VERIFY step 2b routes offers into the source layer through `write` capture, archives what decayed, and proposes a settled preference for the person's standing preferences and a reused snippet as a skill.
+
+### Improvement
+
+**`augment_memory/` is structural, like `augment_wiki/`.** It is never counted as undeclared, never listed as an undecided folder, never a source to conformance, and `source_write.py` refuses to write into it.
+
+### Configuring
+
+An optional `memory:` block in `config.yaml` overrides the defaults: `enabled` (true), `index_cap` (150 index lines), `inject_chars` (6000) and `decay_days` (180). Without it, memory runs on the defaults as soon as the first card is written.
+
 ## v2026-09-26
 
 ### Improvement

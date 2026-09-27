@@ -113,6 +113,14 @@ Then bring the sources' backlink lines into step with the compacted index, so a 
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sync_backlinks.py" <vault>
 ```
 
+**7b. Memory**, skipped when the vault has no `augment_memory/card/`. Read `reference/memory.md` first. Regenerate the index and take its report:
+
+```
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/gen_memory_index.py" <vault>
+```
+
+Merge each `LIKELY SAME` pair alone, since the merge is a supersession and cheap to undo: fold what the weaker card adds into the stronger one with `memory_write.py update`, then `supersede` the weaker, then regenerate. Two cards that only share vocabulary are not merged; say why in the report. `DECAY` lines go to the report as archive proposals, `OFFER` lines as items for the sweep to route, and a `DEFECT` is fixed through `memory_write.py update` where the fix is mechanical and reported where it is not. The cycle never archives, never deletes, and never writes a card of its own: memory comes from sessions where the work happened, not from the cycle reading the vault.
+
 **8. Report.** A grouped list for the sweep, critical errors first, then conformance, then **what the cycle wrote unattended**, then the rest, each finding with its proposed action and enough context to decide without opening the file. No prose.
 
 **The applied-writes section is the audit surface, and it is not optional.** One line per autonomous write, naming the note that gained the tag, what it gained and the one-sentence reason, under the run id the undo script takes. The person's work at the sweep is to scan those lines and say undo that one, which is strictly less than approving each in advance and is the only thing standing between an autonomous cycle and a graph nobody is reading. **A cycle that applies writes and does not list them has broken the trade that let it apply them at all.**

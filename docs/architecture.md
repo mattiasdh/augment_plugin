@@ -31,6 +31,7 @@ The cost of a request is the skill plus what it names, not the whole plugin.
 | "what do we know about X" | `answer` and the freshness rule |
 | "capture this" | `write`, the writing rules, provenance, statuses |
 | the nightly cycle | `dream`, all three rules, and four reference fragments |
+| "remember how that connector works" | `remember` and the memory reference |
 
 The cycle legitimately needs most of the set, and that is the honest shape of it: the win is not that everything got smaller but that the light operations stopped paying for the heavy one.
 

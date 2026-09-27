@@ -27,6 +27,12 @@
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/detect_tier.py\"",
             "timeout": 10,
             "statusMessage": "Locating the augment vault"
+          },
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/memory_context.py\"",
+            "timeout": 10,
+            "statusMessage": "Loading augment memory"
           }
         ]
       }

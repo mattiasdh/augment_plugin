@@ -43,10 +43,21 @@ Each rewrites one derived file and prints a one-line summary. None of them decid
 | `gen_relations.py` | `view/relations.md`, the relationship overlay and the candidate lanes |
 | `gen_verify_queue.py` | the generated half of `verify-queue.md` |
 
+## Memory
+
+The memory layer (`reference/memory.md`) has no ledger and no compile step, so these write and read the cards directly.
+
+| Script | What it does |
+|---|---|
+| `memory_write.py` | The one writer of `augment_memory/`: `add` a card, `seen`, `update`, `supersede`, `archive`, or `offer` content for the source layer. Refuses a near-duplicate of an active card, an over-long title or summary, and the common secret shapes. |
+| `memory_search.py` | Ranks cards by the query words in title, keywords, summary and body. RECALL's search. |
+| `gen_memory_index.py` | Rewrites `augment_memory/index.md` and reports defects, merge candidates, decay proposals and waiting offers. DREAM phase 7b. `--check` writes nothing. |
+| `memory_context.py` | The cards a session starts with, project-scoped first, within a character budget. SessionStart hook; ACTIVATE runs it in Chat. Silent outside a vault. |
+
 ## Tier 2
 
 | Script | What it does |
 |---|---|
 | `runner_mcp.py` | The `augment-runner` MCP server the plugin starts: `status`, `run_script` (any script above except the one-time migration and the hook-only register), `append_history` and `scratch_write`, run beside the vault on the person's machine for a surface with no shell. Stdlib only. |
 
-`_gen_util.py` and `_publish.py` are imported, not invoked: shared front-matter, config and scope helpers, and the definition of what the plugin publishes.
+`_gen_util.py`, `_memory.py` and `_publish.py` are imported, not invoked: shared front-matter, config and scope helpers, the memory card model, and the definition of what the plugin publishes.
