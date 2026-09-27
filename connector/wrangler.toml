@@ -1,0 +1,25 @@
+# The augment connector: a remote MCP server for claude.ai web, mobile and Desktop.
+# Setup is in README.md. Everything below the KV id is a plain setting; the three
+# secrets (GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GITHUB_TOKEN) are set with
+# `npx wrangler secret put <NAME>` and never written here.
+name = "augment-connector"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+
+[[kv_namespaces]]
+binding = "OAUTH_KV"
+id = "REPLACE_WITH_THE_ID_FROM_wrangler_kv_namespace_create"
+
+[vars]
+# The vault repository and branch the connector reads and writes.
+GITHUB_REPO = "OWNER/REPO"
+GITHUB_BRANCH = "main"
+# GitHub logins allowed to sign in, comma-separated. Anyone else is refused.
+ALLOWED_GITHUB_LOGINS = "YOUR_GITHUB_LOGIN"
+# Hosts an OAuth client may redirect to. Claude's connectors call back to these.
+ALLOWED_REDIRECT_HOSTS = "claude.ai,claude.com"
+# The clock the vault's `created:` and `updated:` stamps are read in: an IANA zone such as Europe/Paris.
+TIMEZONE = "UTC"
+# The Worker's own https origin, as `wrangler deploy` prints it, without a trailing slash.
+# Claude reaches the MCP endpoint at PUBLIC_URL/mcp.
+PUBLIC_URL = "https://augment-connector.YOUR_SUBDOMAIN.workers.dev"

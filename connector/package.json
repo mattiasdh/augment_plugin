@@ -1,0 +1,24 @@
+{
+  "name": "augment-connector",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Remote MCP connector for an augment vault: memory, wiki reading and inbox capture from claude.ai web, mobile and Desktop.",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p test",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@cloudflare/workers-oauth-provider": "^1.1.0",
+    "yaml": "^2.9.1"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260927.1",
+    "@types/node": "^22.20.4",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.2",
+    "wrangler": "^4.142.0"
+  }
+}

@@ -2,6 +2,12 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag.
 
+## Unreleased
+
+### New feature
+
+**A remote connector for the web and the phone.** `connector/` is a Cloudflare Worker that serves the vault over MCP to Claude on the web and the mobile apps, through GitHub. It loads and writes memory with the same refusals as `memory_write.py`, searches wiki titles and source paths, reads what the vault's own scope rules allow at request time, and captures create-only into the inbox; comments and corrections are parked as offers for the sweep. GitHub sign-in proves identity only, a fine-grained token limited to the one repository does the reading and writing, and tokens are issued only to Claude's callback hosts. The memory and scope logic is ported from the scripts, and parity tests run the Python beside the port. Deploying it changes nothing in the plugin as installed, so it ships ahead of the next dated release, which will add it to `rules/surfaces.md`.
+
 ## v2026-09-27
 
 ### New feature

@@ -74,6 +74,10 @@ Beside the wiki sits a small memory layer for what the model learns while workin
 
 The method lives here in the plugin and is versioned separately, so a vault carries its content and its declarations and nothing about how the system behaves. `config.yaml` records which release last compiled it.
 
+## Reaching the vault from the web and the phone
+
+`connector/` is a remote MCP server for Claude on the web and the mobile apps, where no shell and no local server run. It is a Cloudflare Worker on the free plan that reaches the vault through GitHub: it loads and writes memory, searches and reads what the vault's scope rules allow, and captures new notes into the inbox. Compiling stays where the scripts run. Setup and the security model are in `connector/README.md`.
+
 ## Starting from an existing archive
 
 Point it at a tree you already have. **Nothing is processed until you say so.** The first cycle reports how many sources await declaration rather than sweeping them in, because in an archive holding client or confidential work, deciding on your behalf is the dangerous error. You declare whole folders at a time during the sweep, and a folder nobody has ruled on stays visibly undecided rather than being quietly treated as excluded.
