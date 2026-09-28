@@ -1,6 +1,6 @@
 # augment connector
 
-A remote MCP server that reaches an augment vault through GitHub, for the surfaces that can run neither a shell nor a local MCP server: Claude on the web and the mobile apps. Desktop can use it too, when the Obsidian tier is not running. It runs as a Cloudflare Worker on the free plan.
+A remote MCP server that reaches an augment vault through GitHub, for the surfaces that can run neither a shell nor a local MCP server: Claude on the web and the mobile apps. Desktop can use it too, when the Obsidian tier is not running. It runs as a Cloudflare Worker, a small program hosted in your own Cloudflare account, on the free plan.
 
 **It carries the work that suits a phone: asking, remembering and capturing. Compiling stays where the scripts run.**
 
@@ -36,44 +36,167 @@ The vault's own `augment_wiki/config.yaml` decides, read at request time; nothin
 
 ## Setup
 
-About twenty minutes, on a machine with Node 20 or later. The Worker's address exists only after the first deploy, and the GitHub OAuth app needs that address, so the order matters.
+About half an hour the first time, and no prior Cloudflare experience is assumed.
 
-**1. Keep your settings out of this public repository.** Copy the config and work from the copy, which `.gitignore` excludes:
+### Where everything happens
+
+**Nothing is installed or typed on Cloudflare's side.** You run a handful of commands in the Terminal on your own computer; one of them, `wrangler`, packs up the code in this folder and uploads it to your Cloudflare account, where it runs from then on. Your computer is only needed to set it up and to update it later; once deployed, the connector runs whether your computer is on or off.
+
+| Where | What you do there |
+|---|---|
+| **Terminal on your computer** | Download this code, fill in one settings file, run `wrangler` to create, deploy and store secrets |
+| **Cloudflare, in the browser** | Create a free account once; `wrangler` opens a browser page to connect to it. Nothing else is required, though the dashboard shows the running Worker and its logs. |
+| **GitHub, in the browser** | Create a sign-in app and an access token for the vault repository |
+| **Claude, in the browser** | Add the connector, then connect it once |
+
+The steps below are written for a Mac. On Windows, use PowerShell and the Node.js installer for Windows; the commands are the same.
+
+### What you need first
+
+- **A Cloudflare account.** Sign up free at [dash.cloudflare.com/sign-up](https://dash.cloudflare.com/sign-up) and confirm the e-mail. The free plan is enough and asks for no payment details.
+- **Node.js 20 or later**, which provides `npm` and `npx`. Check in Terminal with `node --version`. If the command is not found or the number is below 20, install the LTS version from [nodejs.org](https://nodejs.org), then open a new Terminal window.
+- **git**, to download the code. `git --version` in Terminal either prints a version or offers to install the Apple command line tools; accept.
+- **The GitHub account that owns the vault repository**, and, on a Team or Enterprise Claude plan, an Owner of the Claude organisation for step 11.
+
+The order of the steps matters: the connector's web address exists only after the first deploy, and GitHub needs that address in step 7.
+
+### 1. Download the code
+
+In Terminal:
 
 ```bash
-cd connector
+git clone https://github.com/mattiasdh/augment_plugin.git ~/augment_plugin
+cd ~/augment_plugin/connector
 npm install
+```
+
+`npm install` downloads the libraries the connector uses, `wrangler` among them, into this folder. Every later command is run from this folder; after closing Terminal, return to it with `cd ~/augment_plugin/connector`.
+
+### 2. Make your private settings file
+
+The repository is public, so your own values go into a copy that git ignores and never uploads:
+
+```bash
 cp wrangler.toml wrangler.local.toml
+open -e wrangler.local.toml
+```
+
+This opens the file in TextEdit. Before typing, switch off Edit, Substitutions, Smart Quotes: curly quotes break the file. Any plain-text editor will do instead, or `nano wrangler.local.toml` inside Terminal. Leave the file open; steps 4 and 6 add to it.
+
+Fill in the three values you already know, keeping the straight quotes:
+
+- `GITHUB_REPO`: the vault repository as `owner/repo`, for example `"yourname/vault"`.
+- `ALLOWED_GITHUB_LOGINS`: your GitHub user name. Only the logins listed here can ever connect.
+- `TIMEZONE`: the zone the vault's timestamps are written in, for example `"Europe/Paris"`.
+
+### 3. Connect wrangler to your Cloudflare account
+
+```bash
 npx wrangler login
-npx wrangler kv namespace create OAUTH_KV     # put the printed id in wrangler.local.toml
 ```
 
-**2. Fill in `wrangler.local.toml`**: `GITHUB_REPO` (`owner/repo` of the vault), `ALLOWED_GITHUB_LOGINS` (your GitHub login), `TIMEZONE`, the IANA zone the vault's stamps are written in.
+A browser page opens at Cloudflare; log in and click Allow. Back in Terminal, `npx wrangler whoami` should print your account's e-mail.
 
-**3. First deploy**, to learn the address:
+### 4. Create the storage for sign-ins
+
+```bash
+npx wrangler kv namespace create OAUTH_KV
+```
+
+This creates a small key-value store in your Cloudflare account, where the connector keeps who is signed in. The output ends with a line holding `id = "…"`. Copy that id into `wrangler.local.toml`, replacing `REPLACE_WITH_THE_ID_FROM_wrangler_kv_namespace_create`, and save.
+
+### 5. First deploy, to get the connector's address
 
 ```bash
 npx wrangler deploy -c wrangler.local.toml
 ```
 
-Put the printed `https://augment-connector.<subdomain>.workers.dev` in `PUBLIC_URL`.
+The `-c wrangler.local.toml` part tells wrangler to use your private file; every command from here carries it. If wrangler asks you to choose a `workers.dev` subdomain, pick a short name: it becomes part of the address. The output ends with the address, of the form `https://augment-connector.<your-subdomain>.workers.dev`.
 
-**4. Create the GitHub OAuth app** at GitHub, Settings, Developer settings, OAuth Apps, New: homepage `PUBLIC_URL`, callback `PUBLIC_URL/callback`. Copy the client id and generate a client secret.
+The connector is now online but not yet usable, which is expected.
 
-**5. Create the fine-grained token** at GitHub, Settings, Developer settings, Fine-grained tokens: resource owner the vault's owner, **only the vault repository**, permission **Contents: Read and write** (Metadata read is added automatically), an expiry you will actually rotate.
+### 6. Put the address in the settings
 
-**6. Store the three secrets and deploy again:**
+In `wrangler.local.toml`, set `PUBLIC_URL` to that address exactly, with no slash at the end. Save. It is deployed again in step 9.
+
+### 7. Create the GitHub sign-in app
+
+In the browser, go to GitHub, Settings, Developer settings, OAuth Apps ([github.com/settings/developers](https://github.com/settings/developers)), and click New OAuth App:
+
+- Application name: `augment connector`, or anything you will recognise.
+- Homepage URL: your `PUBLIC_URL`.
+- Authorization callback URL: your `PUBLIC_URL` followed by `/callback`.
+
+Click Register application. On the next page, copy the **Client ID**, then click Generate a new client secret and copy the **secret**. GitHub shows the secret once only, so keep the page open until step 9.
+
+This app is only how you prove to the connector who you are. It asks GitHub for no permissions.
+
+### 8. Create the token the connector reads and writes with
+
+Go to GitHub, Settings, Developer settings, Fine-grained tokens ([github.com/settings/personal-access-tokens/new](https://github.com/settings/personal-access-tokens/new)):
+
+- Token name: `augment connector`.
+- Expiration: a date you will act on, and a calendar reminder a week before it. When it expires the connector stops until step 9 is repeated for `GITHUB_TOKEN`.
+- Resource owner: the owner of the vault repository.
+- Repository access: **Only select repositories**, and select the vault repository alone.
+- Permissions, Repository permissions: **Contents: Read and write**. Metadata read-only is added by itself. Leave everything else at No access.
+
+Click Generate token and copy it. It too is shown once.
+
+### 9. Store the three secrets, and deploy again
+
+Each command asks you to paste a value; nothing appears as you paste, which is normal. Press Enter after each.
 
 ```bash
-npx wrangler secret put GITHUB_CLIENT_ID -c wrangler.local.toml
-npx wrangler secret put GITHUB_CLIENT_SECRET -c wrangler.local.toml
-npx wrangler secret put GITHUB_TOKEN -c wrangler.local.toml
+npx wrangler secret put GITHUB_CLIENT_ID -c wrangler.local.toml       # the Client ID from step 7
+npx wrangler secret put GITHUB_CLIENT_SECRET -c wrangler.local.toml   # the client secret from step 7
+npx wrangler secret put GITHUB_TOKEN -c wrangler.local.toml           # the token from step 8
 npx wrangler deploy -c wrangler.local.toml
 ```
 
-**7. Add it to Claude.** On a Team or Enterprise plan an Owner adds it under Organization settings, Connectors, Add, with the URL `PUBLIC_URL/mcp`; each member then connects it once under their own connector settings, which opens the GitHub sign-in. On an individual plan it is added under Customize, Connectors. A connector connected on the web is available on mobile after the next login there; Anthropic still describes custom connectors on mobile as beta, so test one capture from the phone before relying on it.
+The secrets are stored encrypted in your Cloudflare account and never in a file on your computer, so nothing secret sits in `wrangler.local.toml`.
 
-**8. Tell Claude when to use it.** Chat runs no hooks, so nothing loads the memory by itself. Either start a conversation with "activate augment", or add one line to your standing preferences, which load on every surface: *At the start of a conversation involving tools, files or the vault, call the augment connector's activate; record what you learn about how the work is done with memory_add.*
+### 10. Check it is alive
+
+Open your `PUBLIC_URL` in the browser: a short page titled "augment connector" should appear. Then, in Terminal:
+
+```bash
+curl -i -X POST https://augment-connector.<your-subdomain>.workers.dev/mcp
+```
+
+A `401 Unauthorized` answer is the right one: the connector is up and refuses anyone who has not signed in.
+
+### 11. Add it to Claude
+
+On a **Team or Enterprise** plan an Owner goes to Organization settings, Connectors, Add custom connector, gives it a name and the URL `PUBLIC_URL/mcp` (your address followed by `/mcp`), and saves. Each member then connects it once from their own connector settings (Customize, Connectors). On an **individual** plan, add it yourself under Customize, Connectors, Add custom connector.
+
+Connecting sends you to GitHub, which asks once whether to authorise the app from step 7; after that you are back in Claude with the connector connected. A GitHub account not listed in `ALLOWED_GITHUB_LOGINS` gets a "Not allowed" page instead.
+
+A connector connected on the web is available in the mobile apps after the next login there. Anthropic still describes custom connectors on mobile as beta, so make one test capture from the phone before relying on it.
+
+### 12. Tell Claude when to use it
+
+Chat runs no hooks, so nothing loads the memory by itself. Either start a conversation with "activate augment", or add one line to your standing preferences, which load on every surface: *At the start of a conversation involving tools, files or the vault, call the augment connector's activate; record what you learn about how the work is done with memory_add.*
+
+### Later
+
+| To | Run, in `~/augment_plugin/connector` |
+|---|---|
+| Install a newer version of the connector | `git pull`, then `npm install` and `npx wrangler deploy -c wrangler.local.toml` |
+| Replace an expiring token | `npx wrangler secret put GITHUB_TOKEN -c wrangler.local.toml` with the new token; no redeploy needed |
+| Lock someone out, or change a setting | edit `wrangler.local.toml`, then `npx wrangler deploy -c wrangler.local.toml` |
+| Watch what the connector is doing | `npx wrangler tail -c wrangler.local.toml` while using it from Claude |
+| Remove it entirely | `npx wrangler delete -c wrangler.local.toml`, then delete the OAuth app and the token on GitHub and the connector in Claude |
+
+Keep a copy of `wrangler.local.toml` somewhere safe: it holds no secrets, but it is the only record of your settings, and git deliberately does not keep it.
+
+### When something goes wrong
+
+- **The address shows a Cloudflare error page (1101).** Usually `PUBLIC_URL` is missing or has a trailing slash. Fix it, deploy again, and read `npx wrangler tail` output for the exact message.
+- **"Client not allowed" during connecting.** The request did not come from Claude's own sign-in flow; add the connector from Claude's connector settings, not from a copied link.
+- **"Not allowed" after the GitHub step.** The GitHub login you used is not in `ALLOWED_GITHUB_LOGINS`.
+- **"Sign-in expired".** More than ten minutes passed between starting and finishing the connection; start again from Claude.
+- **Connected, but every call answers `ERROR: GitHub …`.** The token from step 8 is expired, lacks Contents read and write, or was given access to a different repository than `GITHUB_REPO`.
 
 ## Cost on the free plan
 
