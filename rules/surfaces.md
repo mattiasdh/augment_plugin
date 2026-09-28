@@ -9,7 +9,7 @@
 **Tier 2, Obsidian.** No shell, as in the Desktop Chat tab. Two MCP servers stand in for it, on the person's machine:
 
 - **Obsidian's Local REST API MCP**, set up by the person in Desktop (`docs/getting-started.md`): reads, searches, writes whole notes, and runs Obsidian commands, which is how git is reached, through the Obsidian Git plugin.
-- **`augment-runner`**, bundled in this plugin: runs the pinned scripts beside the vault, appends to the ledger, and holds scratch files. It needs the plugin's `vault_path` setting.
+- **`augment-runner`**, a script in this plugin (`scripts/runner_mcp.py`): runs the pinned scripts beside the vault, appends to the ledger, and holds scratch files. **Chat never starts a plugin's own MCP server**, so there the person registers the runner by hand in Desktop's `claude_desktop_config.json`, beside the Obsidian entry, pointing at a clone of the plugin and giving the vault as `AUGMENT_VAULT` (`docs/getting-started.md`). The plugin starts it itself only in Code and Cowork, where it reads the plugin's `vault_path` setting.
 
 ## The gate
 
@@ -23,9 +23,9 @@ Run it before the first vault operation. How often depends on the surface.
 
 - Obsidian is not running, or its Local REST API plugin is off.
 - The Obsidian MCP is not configured in Desktop.
-- `augment-runner` is absent, because the plugin is not enabled on this surface.
-- `vault_path` is unset or wrong: set it in the plugin's settings.
-- PyYAML is missing for the Python that runs the scripts.
+- `augment-runner` is absent from the conversation. In Chat it is never supplied by the plugin: it must be registered in `claude_desktop_config.json`, then Desktop quit fully and a new conversation opened, since connectors attach when a conversation starts. There is no toggle to enable it otherwise.
+- The runner reports no vault: `AUGMENT_VAULT` in Desktop's config (Chat) or the plugin's `vault_path` (Code, Cowork) is unset or wrong.
+- PyYAML is missing for the exact Python that runs the runner. On macOS that is usually `/usr/bin/python3`, and the fix is `/usr/bin/python3 -m pip install --user pyyaml`; pipx does not make it importable.
 
 Do not start the operation, and do not answer from memory or from an earlier read, since that is the stale read the freshness rule exists to prevent.
 
@@ -80,6 +80,6 @@ Obsidian Git is the only thing that commits in Tier 2. The runner never runs git
 
 - **Skills** load in Code, Cowork, and Chat on the web and in Desktop.
 - **Hooks** run in Code and Cowork only, which is why Chat probes from the skill.
-- **Local MCP servers** from the plugin, `augment-runner` among them, run on the machine the client runs on. That is the Mac for Desktop, and never claude.ai on the web.
+- **Local MCP servers** from the plugin, `augment-runner` among them, run in Code and Cowork only, never in Chat. Desktop Chat reaches a local server only through Desktop's own config, which is why the runner is registered there by hand.
 
-So Tier 2 is a Desktop surface, and the web Chat has no tier.
+So Tier 2 is a Desktop surface built from two hand-registered servers, and the web Chat has no local tier. The remote connector (`connector/`) is the separate, narrower route for the web and the phone: memory, search, reading and inbox capture over GitHub, not the full script set.

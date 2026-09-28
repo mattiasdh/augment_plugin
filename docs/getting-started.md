@@ -26,7 +26,7 @@ Everything else is reading and asking. `/augment:answer` retrieves or synthesise
 
 ## Using it from Claude Desktop
 
-The same plugin loads in the Desktop Chat tab: in Customize, Plugins, add `mattiasdh/augment_plugin` from a repository. Chat has no shell, so it reaches the vault through Obsidian, running on the same Mac, and through `augment-runner`, a small local server the plugin starts to run its scripts there. That is Tier 2 in `rules/surfaces.md`, and it can do everything Tier 1 can. Set it up once:
+The same plugin loads in the Desktop Chat tab: in Customize, Plugins, add `mattiasdh/augment_plugin` from a repository. That brings the skills. Chat has no shell, so it reaches the vault through two local servers: Obsidian's, and `augment-runner`, which runs the plugin's scripts beside the vault. Chat never starts a plugin's own servers, so both are registered by hand in Desktop's `claude_desktop_config.json`. That is Tier 2 in `rules/surfaces.md`, and it can do everything Tier 1 can. Set it up once, on the machine that runs Desktop:
 
 1. **Obsidian, Local REST API.** Install it, turn its MCP server on, and leave it bound to `127.0.0.1` on the HTTPS port. Copy the API key.
 2. **Trust its certificate.** Node refuses a self-signed certificate, and the MCP bridge runs on Node. Save the certificate once, with `curl -sk https://127.0.0.1:27124/obsidian-local-rest-api.crt -o ~/.config/obsidian/local-rest-api.crt`. Then check that `curl --cacert ~/.config/obsidian/local-rest-api.crt https://127.0.0.1:27124/` succeeds without `-k`.
@@ -45,10 +45,30 @@ The same plugin loads in the Desktop Chat tab: in Customize, Plugins, add `matti
 
    Keep `Authorization:${OBSIDIAN_AUTH}` without a space; some Desktop versions split arguments on spaces. Restart Desktop fully after editing.
 4. **Obsidian Git.** Turn on pull on startup and pull before push, and use the merge strategy. It is the only thing that commits in Tier 2. If it ever resolves a conflict by keeping your copy, conformance reports the lost ledger lines as a `LEDGER LOSS` for the sweep.
-5. **The plugin's `vault_path`.** Set it to the vault folder, the one holding `augment_wiki/config.yaml`. The same setting lets a Claude Code session in another project reach the vault as Tier 1.
-6. **Python.** The scripts need Python 3 and PyYAML for the `python3` Desktop finds, usually `/usr/bin/python3`: run `python3 -m pip install --user pyyaml`. `augment-runner`'s `status` names the interpreter it used and says whether PyYAML is present.
+5. **A clone of the plugin, for the runner.** Plugins added through Desktop leave no copy of the scripts at a path you can point to, so clone the repository once: `git clone https://github.com/mattiasdh/augment_plugin ~/augment_plugin`. Update it after each release with `git -C ~/augment_plugin pull`; the runner's `status` names the version it runs, and conformance reports when that differs from `config.yaml`.
+6. **Python and PyYAML.** The scripts need PyYAML for the exact Python the runner uses. On macOS that is `/usr/bin/python3`, the Command Line Tools Python: run `/usr/bin/python3 -m pip install --user pyyaml`, then check with `/usr/bin/python3 -c "import yaml"`. pipx does not work here, since it installs each package into its own sealed environment.
+7. **Test the runner from the terminal**, before touching Desktop, with the vault folder filled in, on one line:
 
-A Chat conversation checks all of this at its first vault request, and if anything is missing it says which piece and waits for you to connect it.
+   ```bash
+   echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"status","arguments":{}}}' | AUGMENT_VAULT="$HOME/path/to/vault" /usr/bin/python3 "$HOME/augment_plugin/scripts/runner_mcp.py"
+   ```
+
+   Success reads `READY: vault at …` and `pyyaml: yes`.
+8. **Register the runner in Desktop**, beside `obsidian` in `claude_desktop_config.json`. Full paths only: that file expands neither `~` nor `${…}`.
+
+   ```json
+   "augment-runner": {
+     "command": "/usr/bin/python3",
+     "args": ["/Users/<you>/augment_plugin/scripts/runner_mcp.py"],
+     "env": { "AUGMENT_VAULT": "/Users/<you>/path/to/vault" }
+   }
+   ```
+
+   The plugin's own `vault_path` setting is separate: it serves Claude Code and Cowork, including a Code session opened on another project.
+
+After any change to `claude_desktop_config.json`, quit Desktop fully and open a new conversation, since connectors attach when a conversation starts. A Chat conversation checks all of this at its first vault request, or when you run `/augment:activate`, and if anything is missing it says which piece and waits for you to connect it.
+
+**If the Obsidian server stops starting**, read Desktop's MCP log. The bridge runs on whichever Node `npx` resolves to, so a Node broken by a package-manager upgrade (a `dyld: Library not loaded` line naming `node`) takes it down; repair Node, with `brew reinstall node` for Homebrew, and check that `node --version` answers before restarting Desktop.
 
 ## What you never do
 
