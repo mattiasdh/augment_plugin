@@ -1,10 +1,8 @@
 # Changelog
 
-Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag.
+Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag. A second release on the same day adds a revision letter: `v2026-09-29 Rev. A` here, `2026.9.29-revA` in `plugin.json`.
 
-## Next release
-
-To be dated the day it is cut; the entries below are on `release/next`.
+## v2026-09-29 Rev. A
 
 ### New feature
 
@@ -14,6 +12,8 @@ To be dated the day it is cut; the entries below are on `release/next`.
 
 **A search index for searches that cannot open files.** `gen_search.py` writes `augment_wiki/search.json` at the end of DREAM phase 7: titles, aliases, keywords, a one-line summary and cited sources per note, and the in-scope sources with the notes citing them, already tokenised. The connector's `vault_search` reads it, and its `capture_note` names likely duplicates.
 
+**Routing tests for the skills.** `evals/routing/` holds 41 requests, three or four per skill, phrased the way a person would type them, graded on which skill Claude loads, with the memory/content boundary weighted in: a client's requirement must reach `write` and not `remember`, a tool quirk `remember` and not `write`. Run with `claude plugin eval . --ablation none --tag routing --scaffold`. On 2026-09-29 the default model routed all 41 correctly; Haiku routed 23, confusing the sweep with the nightly cycle, recall with answer, and a client's drawing convention with the person's own. Those descriptions are sharpened in this release, below, and the suite is the check.
+
 ### Improvement
 
 **Eight skill descriptions name their neighbours**, against the routing tests: the weekly sweep is `verify`, not `dream`; digesting particular sources is `process`; how Claude did something before is `recall`, not `answer`; a client's or project's requirement is `write`, not `remember`. The default model routes all 41 test requests correctly before and after; Haiku went from 23 to 26.
@@ -21,12 +21,6 @@ To be dated the day it is cut; the entries below are on `release/next`.
 **Accents fold in the memory tokeniser**, so `réemploi` and `reemploi` are one word; no card's duplicate report changes.
 
 **One resolver for source ids**, `_gen_util.source_path`, used wherever a script opens a source by id. No behaviour change; it is where a later read-only mounted source root would be resolved.
-
-## Unreleased
-
-### New feature
-
-**Routing tests for the skills.** `evals/routing/` holds 41 requests, three or four per skill, phrased the way a person would type them, graded on which skill Claude loads, with the memory/content boundary weighted in: a client's requirement must reach `write` and not `remember`, a tool quirk `remember` and not `write`. Run with `claude plugin eval . --ablation none --tag routing --scaffold`. On 2026-09-29 the default model routed all 41 correctly; Haiku routed 23, confusing the sweep with the nightly cycle, recall with answer, and a client's drawing convention with the person's own. Those descriptions are sharpened in the next release, and the suite is the check.
 
 ## v2026-09-29
 
