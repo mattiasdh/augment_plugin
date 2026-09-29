@@ -34,6 +34,14 @@ Read `rules/freshness.md` and run the check first. Read `rules/write-flow.md` as
 
 ## Capture
 
+**0. Check it is not already there.** A second copy of something the person already holds splits it in two, and each half then compiles on its own. Before drafting the file, score the draft against the wiki and the source layer:
+
+```
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/similar_notes.py" <vault> --sources --title "<title>" --text-file <draft>
+```
+
+It reads only what scope allows, plus the inbox. On a `source` hit marked `LIKELY SAME`, read it: if it already holds the material, offer a comment on that source instead, and capture only when the person confirms the new material differs. On a `wiki` hit, say the content is already compiled, naming the note and its sources, and let the person decide. Read the top `RELATED` hit too, since a short paraphrase of an existing note lands there. In Tier 2 the same call goes through `run_script`.
+
 **1. The destination decides whether processing follows.** Where the person names a home in the source tree, write there, and the note is in scope and ready. Otherwise write to `_inbox/`, which is the default: inbox notes are unaddressed and out of scope until the person assigns them an address. **Never invent an address**, and never infer one from the session's topic.
 
 **2. Write the frontmatter,** the three system keys and nothing else, plus `assisted_by:` where the model drafted any prose.
