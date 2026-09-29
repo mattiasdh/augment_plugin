@@ -78,6 +78,10 @@ The method lives here in the plugin and is versioned separately, so a vault carr
 
 `connector/` is a remote MCP server for Claude on the web and the mobile apps, where no shell and no local server run. It is a Cloudflare Worker on the free plan that reaches the vault through GitHub: it loads and writes memory, searches and reads what the vault's scope rules allow, and captures new notes into the inbox. Compiling stays where the scripts run. Setup and the security model are in `connector/README.md`.
 
+## Tests
+
+`evals/routing/` checks that each request reaches the skill meant for it, the memory/content boundary included; run it with `claude plugin eval . --ablation none --tag routing --scaffold` after changing any skill's description. See `evals/README.md`.
+
 ## Starting from an existing archive
 
 Point it at a tree you already have. **Nothing is processed until you say so.** The first cycle reports how many sources await declaration rather than sweeping them in, because in an archive holding client or confidential work, deciding on your behalf is the dangerous error. You declare whole folders at a time during the sweep, and a folder nobody has ruled on stays visibly undecided rather than being quietly treated as excluded.

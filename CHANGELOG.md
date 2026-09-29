@@ -2,6 +2,26 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag.
 
+## Next release
+
+To be dated the day it is cut; the entries below are on `release/next`.
+
+### New feature
+
+**A capture is checked against the vault before it is filed.** `similar_notes.py --sources` scores a draft against in-scope sources and the inbox as well as the wiki, never reading an out-of-scope, unruled or ignored folder, and WRITE capture runs it as step 0, offering a comment on the existing source instead of a second copy. The source cut-offs were calibrated on the vault itself: an exact copy scores 0.99, a two-sentence paraphrase 0.45, new material under 0.15, and from 0.60 up the best match between existing sources was almost always a real duplicate (a sync-conflict copy, a `-AA-mdh` twin, a v2 beside its v3).
+
+**Wiki notes carry the names their sources use.** `aliases:` holds two to four names, each found in one of the note's own sources, so a note titled in English is found by the Dutch or French its sources use. `apply_aliases.py` is the only writer and refuses a name no source carries; PROCESS sets them on new and rebuilt notes, DREAM phase 6 backfills twenty a night, and conformance counts what is left (185 notes at release).
+
+**A search index for searches that cannot open files.** `gen_search.py` writes `augment_wiki/search.json` at the end of DREAM phase 7: titles, aliases, keywords, a one-line summary and cited sources per note, and the in-scope sources with the notes citing them, already tokenised. The connector's `vault_search` reads it, and its `capture_note` names likely duplicates.
+
+### Improvement
+
+**Eight skill descriptions name their neighbours**, against the routing tests: the weekly sweep is `verify`, not `dream`; digesting particular sources is `process`; how Claude did something before is `recall`, not `answer`; a client's or project's requirement is `write`, not `remember`. The default model routes all 41 test requests correctly before and after; Haiku went from 23 to 26.
+
+**Accents fold in the memory tokeniser**, so `réemploi` and `reemploi` are one word; no card's duplicate report changes.
+
+**One resolver for source ids**, `_gen_util.source_path`, used wherever a script opens a source by id. No behaviour change; it is where a later read-only mounted source root would be resolved.
+
 ## Unreleased
 
 ### New feature
