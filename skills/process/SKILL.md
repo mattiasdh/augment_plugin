@@ -1,6 +1,6 @@
 ---
 name: process
-description: Compile source notes into wiki notes. Use when new sources are waiting, when the person asks to digest or process material, when a note's sources changed and it needs rebuilding, when project logs need their dated decisions harvested, or when the writing rules changed and existing notes need restyling. Runs without the person present, so every rule here is a hard constraint.
+description: Compile source notes into wiki notes. Use when the person asks to digest, compile or process new or particular sources into the wiki, when a note's sources changed and it needs rebuilding, when project meeting logs need their dated decisions harvested into the project notes, or when the writing rules changed and existing notes need restyling. Runs without the person present, so every rule here is a hard constraint. Not minting one named concept, which is mint, and not the whole nightly cycle, which is dream.
 ---
 
 # Process

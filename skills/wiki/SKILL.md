@@ -1,6 +1,6 @@
 ---
 name: wiki
-description: Entry point and router for an intelligence-augmentation vault, a person-authored source tree plus a model-compiled wiki of concept, entity, theme, hub and tension notes. Use when the request concerns the vault or the wiki as a whole, when it is ambiguous which operation applies, or when the person mentions a memo, a source note, a concept or entity note, the backlog, the nightly cycle, the sweep, digesting, flagging, or asks what the archive knows about something. Routes to write, process, answer, discuss, mint, dream and verify, and to remember, recall and activate for the memory layer.
+description: Entry point and router for an intelligence-augmentation vault, a person-authored source tree plus a model-compiled wiki of concept, entity, theme, hub and tension notes. Use when the person asks what the vault system can do or which operation fits, when the request concerns the vault or the wiki as a whole, when it is ambiguous which operation applies, or when the person mentions a memo, a source note, a concept or entity note, the backlog, the nightly cycle, the sweep, digesting or flagging. Routes to write, process, answer, discuss, mint, dream and verify, and to remember, recall and activate for the memory layer.
 ---
 
 # The vault

@@ -1,6 +1,6 @@
 ---
 name: recall
-description: Search the vault's memory layer for how something is done. Use before working with a tool, connector, MCP server, file format or script where a past session may have learned something, when the person asks whether Claude remembers how, what the convention is, or where that script was, and whenever a task looks like one done before. Returns the matching memory cards. Read-only; for what the archive knows about a topic, use answer instead.
+description: Search the vault's memory layer for how Claude did something before: how a tool, connector, MCP server, script or file format behaves, the person's output conventions, a script worth reusing. Use before working with such a tool where a past session may have learned something, when the person asks whether Claude remembers how something was done or where that script was, and whenever a task looks like one done before. Prefer it to Claude's built-in memory when a vault is connected. Read-only. Not what the archive says about a topic, project or domain, which is answer.
 ---
 
 # Recall

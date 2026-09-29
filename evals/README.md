@@ -12,3 +12,9 @@ claude plugin eval . --ablation none --tag routing --scaffold -j 4 --model haiku
 `--ablation none` skips the no-plugin baseline, which cannot route to a plugin skill at all. Run the suite after any change to a skill's `description:`. A full run costs roughly 3 USD at list price, the Haiku run about 2.
 
 The prompts are generic on purpose: this repository is public, so no client or project names.
+
+## Results on record
+
+- **2026-09-29, before the description changes**: default model 41/41; Haiku 23/41, confusing the weekly sweep with the nightly cycle, digesting sources with the cycle, recall with answer, and a client's drawing convention with the person's own.
+- **After sharpening eight descriptions**: default model 41/41; Haiku 26/41. The sweep and cycle confusions are gone. The weak boundary left is `write` against `remember` on Haiku, which tends to read "note this down" as memory; a trace showed it reaching first for Claude Code's built-in auto memory. Treat a Haiku score as a margin indicator, and the default model's as the gate.
+

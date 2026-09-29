@@ -1,6 +1,6 @@
 ---
 name: verify
-description: The weekly sweep, and the only operation needing the person present. Use when someone asks for the sweep, the weekly review, to go through the queue, or to audit what the nightly cycle has been doing. Audits the writes the cycle made unattended, then takes the decisions the cycle is barred from making alone: removals, splits, supersessions, tensions, and anything in the person's own layer.
+description: The weekly sweep with the person present: reviewing the queue together, auditing what the unattended nightly runs changed, and taking the decisions the cycle may not take alone (removals, splits, supersessions, tensions, anything in the person's own layer). Use when someone asks for the sweep or the weekly review, to go through the review queue, or to check what the automatic runs did this week. Not running the nightly cycle itself, which is dream, and not reporting one wrong wiki note, which write files as a correction.
 ---
 
 # Verify

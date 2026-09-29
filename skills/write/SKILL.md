@@ -1,6 +1,6 @@
 ---
 name: write
-description: Write into the source layer, the person's own authoritative notes. Use to capture or store something, note this down, file a memo, attach a comment or caveat to an existing source, or record that a wiki note is wrong. Covers capture, comment and correction, which are three shapes of the same act and share one set of hard rules. Never writes a wiki note.
+description: Put something into the person's notes, the source layer. Use when the person asks to note something down, capture or store it in their notes, file a memo, record a client's or project's requirement or preference, attach a comment or caveat to an existing source, or record that a wiki note is wrong. Covers capture, comment and correction, three shapes of the same act sharing one set of hard rules. Never writes a wiki note. Not a lesson about how Claude should work next time, a tool's behaviour or a reusable script, which remember records.
 ---
 
 # Write

@@ -1,6 +1,6 @@
 ---
 name: dream
-description: The nightly maintenance cycle. Use when the person asks to run the cycle, asks what needs attention, asks about the backlog, or when scheduled unattended. Detects changed sources, rebuilds what went stale, consolidates new material, runs the checks, anchors and connects the notes it wrote, regenerates the views, and reports to the queue the sweep reads.
+description: The nightly maintenance cycle, run unattended. Use when the person asks to run the nightly cycle or the maintenance pass, asks what needs attention or what is in the backlog, or when scheduled. Detects changed sources, rebuilds what went stale, consolidates new material, runs the checks, anchors and connects the notes it wrote, regenerates the views, and reports to the queue the weekly sweep reads. Not the weekly sweep or a review of the queue with the person, which is verify, and not digesting particular sources on request, which is process.
 ---
 
 # Dream
