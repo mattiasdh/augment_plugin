@@ -38,6 +38,8 @@ Run from the vault root; the argument `.` is the vault root.
 import glob, json, os, sys
 import yaml
 from hash_source import content_hash
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _gen_util import source_path
 
 ROOT = sys.argv[1] if len(sys.argv) > 1 else "."
 IDX = os.path.join(ROOT, "augment_wiki/index.jsonl")
@@ -103,7 +105,7 @@ def main():
 
     drift, missing = [], []
     for e in src_entries:
-        p = os.path.join(ROOT, e["id"])
+        p = source_path(ROOT, e["id"])
         if not os.path.exists(p):
             missing.append(e)
             continue

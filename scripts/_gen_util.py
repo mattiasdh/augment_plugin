@@ -74,6 +74,20 @@ def scope_of(path, config):
     return "in" if best.get("in_scope") else "out"
 
 
+def source_path(root, sid):
+    """The file a source id names. Every script resolving a source id goes through here.
+
+    A source id is the vault-relative path of a note in the person's tree
+    (`notes/12 tender/12.04 selection-criteria.md`), so today this is a plain join.
+    It is kept in one place because sources may later live outside the vault, a
+    project server or a synced drive mounted read-only under a named root; then this
+    function is the one thing that learns the root, and no script has to. Wiki notes,
+    memory cards and whole-vault globs are not source ids and do not come through
+    here.
+    """
+    return os.path.join(root, sid)
+
+
 def undecided_folders(root, config):
     """Top-level folders no scope rule touches at all, as (name, .md count).
 

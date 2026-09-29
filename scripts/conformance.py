@@ -47,7 +47,7 @@ documents link syntax in backticks is not misread as asserting the link; the
 """
 import datetime, glob, json, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _gen_util import split_note, links_in, load_config, scope_of
+from _gen_util import split_note, links_in, load_config, scope_of, source_path
 
 ROOT = sys.argv[1] if len(sys.argv) > 1 else "."
 IDX = os.path.join(ROOT, "augment_wiki/index.jsonl")
@@ -243,7 +243,7 @@ def main():
     # created: typed from inference rather than read from the clock (§6).
     for p_ in srcs:
         try:
-            fm_, _ = split_note(open(os.path.join(ROOT, p_), encoding="utf-8").read())
+            fm_, _ = split_note(open(source_path(ROOT, p_), encoding="utf-8").read())
         except Exception:
             continue
         c = str(fm_.get("created", "")).strip().strip('"')
@@ -444,7 +444,7 @@ def main():
     # (first and last sentence of every section) stays a reading job.
     for p_ in sorted(srcs):
         try:
-            txt_ = open(os.path.join(ROOT, p_), encoding="utf-8").read()
+            txt_ = open(source_path(ROOT, p_), encoding="utf-8").read()
         except Exception:
             continue
         if "assisted_by:" not in txt_:
@@ -486,7 +486,7 @@ def main():
         i = str(e.get("id", ""))
         if i.startswith("augment_wiki/") or e.get("status") != "processed":
             continue
-        f = os.path.join(ROOT, i)
+        f = source_path(ROOT, i)
         if not os.path.exists(f):
             continue
         head = open(f, encoding="utf-8", errors="replace").read()
