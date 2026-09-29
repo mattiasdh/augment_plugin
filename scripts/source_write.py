@@ -31,6 +31,7 @@ written beside. Nothing is written with --dry-run; the result is printed.
 import argparse, datetime, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from hash_source import content_hash_bytes
+from _gen_util import source_path
 
 KEYS = ("augment", "created", "updated", "assisted_by")
 _DECL = re.compile(rb"^(Status|augment|wiki|created|updated|assisted_by):")
@@ -157,7 +158,7 @@ def main():
     rel = os.path.normpath(a.path)
     if rel.startswith("..") or os.path.isabs(rel) or rel.startswith(("augment_wiki", "augment_memory")):
         print(f"REFUSED: {a.path} is not a source path inside the vault"); sys.exit(1)
-    p = os.path.join(a.vault, rel)
+    p = source_path(a.vault, rel)
     if not os.path.isfile(p):
         print(f"REFUSED: no such file {rel}"); sys.exit(1)
     raw = open(p, "rb").read()

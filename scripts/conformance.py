@@ -37,6 +37,8 @@ class firing on every note cannot bury the rest; findings are never collapsed.
   - queue integrity (advisory): a `CV-`/`MB-`/`SL-`/`RM-` id that `verify-queue.md`
     carried at HEAD and carries nowhere now, so an item was dropped by an edit
     rather than ruled on (VERIFY step 5)
+  - aliases (defect when not a list of plain names; advisory when an alias no longer
+    appears in the note's sources, and a count of notes still without aliases).
   - run marker (advisory): `verify-queue.md` regenerated today with no `*_run` line
     in `history.jsonl` for today, so a cycle ran and left no trace in the ledger
     (CONTRACT §2)
@@ -47,7 +49,7 @@ documents link syntax in backticks is not misread as asserting the link; the
 """
 import datetime, glob, json, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _gen_util import split_note, links_in, load_config, scope_of
+from _gen_util import split_note, links_in, load_config, scope_of, source_path
 
 ROOT = sys.argv[1] if len(sys.argv) > 1 else "."
 IDX = os.path.join(ROOT, "augment_wiki/index.jsonl")
@@ -243,7 +245,7 @@ def main():
     # created: typed from inference rather than read from the clock (§6).
     for p_ in srcs:
         try:
-            fm_, _ = split_note(open(os.path.join(ROOT, p_), encoding="utf-8").read())
+            fm_, _ = split_note(open(source_path(ROOT, p_), encoding="utf-8").read())
         except Exception:
             continue
         c = str(fm_.get("created", "")).strip().strip('"')
@@ -444,7 +446,7 @@ def main():
     # (first and last sentence of every section) stays a reading job.
     for p_ in sorted(srcs):
         try:
-            txt_ = open(os.path.join(ROOT, p_), encoding="utf-8").read()
+            txt_ = open(source_path(ROOT, p_), encoding="utf-8").read()
         except Exception:
             continue
         if "assisted_by:" not in txt_:
@@ -486,7 +488,7 @@ def main():
         i = str(e.get("id", ""))
         if i.startswith("augment_wiki/") or e.get("status") != "processed":
             continue
-        f = os.path.join(ROOT, i)
+        f = source_path(ROOT, i)
         if not os.path.exists(f):
             continue
         head = open(f, encoding="utf-8", errors="replace").read()
@@ -524,6 +526,31 @@ def main():
         if not os.path.exists(os.path.join(ROOT, e["id"])):
             findings.append(f"index entry with no file: {e['id']}")
     entry_ids = {e["id"] for e in note_entries}
+
+    # aliases (reference/note-shape.md): plain names each found in one of the note's
+    # own sources. A wikilink or non-list is a defect; an alias a source no longer
+    # carries (the source changed since) is an advisory; notes still without aliases
+    # are counted while DREAM's backfill works through them.
+    from apply_aliases import fold, source_texts
+    missing_aliases = 0
+    for e in note_entries:
+        if e.get("type") not in ("concept", "entity") or not os.path.exists(os.path.join(ROOT, e["id"])):
+            continue
+        fm_, _ = split_note(open(os.path.join(ROOT, e["id"]), encoding="utf-8").read())
+        al = fm_.get("aliases")
+        if al is None:
+            missing_aliases += 1
+            continue
+        if not isinstance(al, list) or any("[[" in str(x) for x in al):
+            findings.append(f"aliases must be a list of plain names: {e['id']}")
+            continue
+        texts = source_texts(ROOT, e)
+        for x in al:
+            if texts and not any(fold(x) in t for t in texts):
+                advisories.append(f"alias {x!r} no longer appears in any source of {e['id']}")
+    if missing_aliases:
+        advisories.append(f"{missing_aliases} concept and entity notes carry no aliases yet "
+                          "(DREAM phase 6 backfills twenty a night)")
     for p in wiki_files:
         d = p.split("/")
         if len(d) == 3 and d[1] in CONTENT_TYPES and p not in entry_ids:

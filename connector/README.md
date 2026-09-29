@@ -10,7 +10,7 @@ A remote MCP server that reaches an augment vault through GitHub, for the surfac
 | `memory_search`, `memory_get` | Find and read memory cards | `recall` |
 | `memory_add`, `memory_seen`, `memory_update`, `memory_supersede` | Write memory, with the same duplicate, length and secret refusals as `memory_write.py` | `remember` |
 | `memory_offer` | Parks content, a comment or a correction for the weekly sweep | `memory_write.py offer` |
-| `vault_search` | Wiki notes by title, sources by path, from `augment_wiki/index.jsonl` | `answer`'s index step |
+| `vault_search` | Wiki notes by title, aliases, keywords and summary, and sources by path, from `augment_wiki/search.json` (or `index.jsonl` on a vault without it) | `answer`'s index step |
 | `vault_read` | A wiki note, a memory file, or a source the scope rules allow | reading the file |
 | `capture_note` | A new note in the inbox, create-only, marked `assisted_by:` and `[!ai]` when Claude drafted it | `write` capture |
 
@@ -18,7 +18,7 @@ What it does not do, by design:
 
 - **No compiling.** `process`, `mint`, `dream` and `verify` need Python, git and the ledger, so they stay in Code, Cowork, Desktop's Tier 2 and the nightly routine.
 - **No write into an existing note.** A comment or correction needs `source_write.py`, which never touches the person's text; the connector parks it with `memory_offer` instead, and the sweep applies it.
-- **No full-text search of the sources.** The Worker may make 50 outbound calls per request on the free plan, so it searches the index (wiki titles, source paths) and reads notes one at a time.
+- **No full-text search of the sources.** The Worker may make 50 outbound calls per request on the free plan, so it searches `search.json` (wiki titles, aliases in the sources' own languages, keywords, one-line summaries, source paths) and reads notes one at a time. A capture whose title matches a note or source already there is still written, and the answer names the likely duplicates.
 - **It reads the last push.** Edits in Obsidian that Obsidian Git has not pushed yet are invisible, and `activate` says which commit was read. A short automatic push interval in Obsidian Git keeps the gap small.
 - **The inbox is not readable**, since the vault's `config.yaml` ignores it. Captures land there and stay there until the sweep files them.
 
@@ -200,7 +200,9 @@ Keep a copy of `wrangler.local.toml` somewhere safe: it holds no secrets, but it
 
 ## Cost on the free plan
 
-A tool call is one Worker request and one to three GitHub calls. The free plan allows 100,000 requests a day, so a day of heavy use is well under one percent of it. The Worker keeps the vault's config and index for a minute per instance, and reads the memory folder in a single GraphQL request.
+A tool call is one Worker request and one to three GitHub calls. The free plan allows 100,000 requests a day, so a day of heavy use is well under one percent of it. The Worker keeps the vault's config, index and search index for five minutes per instance, so a change to the scope rules in `config.yaml` reaches it within five minutes of the push, and it reads the memory folder in a single GraphQL request.
+
+**CPU.** The free plan allows 10 ms of CPU per request. A warm search takes under 1 ms; the first request after the cache expires parses the config and the search index and measured 7 to 10 ms on a comparable machine. `search.json` arrives already tokenised by `gen_search.py`, and only the three sections of `config.yaml` the connector reads are parsed, both to stay under the limit. If `npx wrangler tail` ever shows error 1102, *Worker exceeded resource limits*, on such a first request, the remedy is the Workers Paid plan (5 USD a month, 30 seconds of CPU per request), not a change to the vault.
 
 ## Development
 

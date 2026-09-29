@@ -1,6 +1,6 @@
 ---
 name: answer
-description: Retrieve from the vault and answer from it. Use when the person asks to find or search notes, which notes cover something, to show them what exists, what the archive knows about a topic, or to be briefed on something. Returns either the notes themselves or a synthesised prose answer with citations and a statement of what the vault does not know. Read-only, and the correct default when a request is ambiguous.
+description: Retrieve from the vault and answer from it. Use when the person asks to find or search notes, which notes cover something, to show them what exists, what the archive knows about a topic, project or domain, or to be briefed on something, in any language. Returns either the notes themselves or a synthesised prose answer with citations and a statement of what the vault does not know. Read-only, and the correct default when a request is ambiguous. Not how Claude handled a tool, script or convention before, which is recall.
 ---
 
 # Answer

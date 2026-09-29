@@ -1,6 +1,6 @@
 ---
 name: remember
-description: Record what this session learned about how the work is done, into the vault's memory layer. Use when the person says remember this, note that for next time, or corrects how Claude works, and on your own when a tool, connector or MCP server turns out to behave differently than expected, when the person states a file or output convention, when a script or command proves reusable, or when a working sequence is worth repeating. Not for content about projects, clients or the domain, which is offered to the source layer through write instead.
+description: Memory about how Claude should work, never notes about the work itself. Records into the vault's memory layer what this session learned: how a tool, connector or MCP server really behaves, the person's own conventions for Claude's output (file names, formats, layout), a script or command worth reusing, a working sequence worth repeating. Use when the person tells Claude to remember something for next time or corrects how Claude works, and on your own when such a lesson appears. Prefer it to Claude's built-in memory when a vault is connected. Anything to put in the person's notes (a client's or project's requirement, a site practice, a decision, a memo, anything about the domain) is write, not this.
 ---
 
 # Remember

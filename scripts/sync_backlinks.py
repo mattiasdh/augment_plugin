@@ -25,6 +25,7 @@ reported, since that would be a body edit, which this script must never make.
 import json, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from hash_source import content_hash_bytes
+from _gen_util import source_path
 
 _DECL = re.compile(rb"^(Status|augment|wiki|created|updated|assisted_by):")
 _WIKI = re.compile(rb"^wiki:")
@@ -98,7 +99,7 @@ def main():
         i = str(e.get("id", ""))
         if i.startswith("augment_wiki/") or e.get("status") != "processed":
             continue
-        p = os.path.join(root, i)
+        p = source_path(root, i)
         if not os.path.exists(p):
             continue
         raw = open(p, "rb").read()

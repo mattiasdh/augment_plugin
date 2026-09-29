@@ -1,12 +1,26 @@
 # Changelog
 
-Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag.
+Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag. A second release on the same day adds a revision letter: `v2026-09-29 Rev. A` here, `2026.9.29-revA` in `plugin.json`.
 
-## Unreleased
+## v2026-09-29 Rev. A
 
 ### New feature
 
-**Routing tests for the skills.** `evals/routing/` holds 41 requests, three or four per skill, phrased the way a person would type them, graded on which skill Claude loads, with the memory/content boundary weighted in: a client's requirement must reach `write` and not `remember`, a tool quirk `remember` and not `write`. Run with `claude plugin eval . --ablation none --tag routing --scaffold`. On 2026-09-29 the default model routed all 41 correctly; Haiku routed 23, confusing the sweep with the nightly cycle, recall with answer, and a client's drawing convention with the person's own. Those descriptions are sharpened in the next release, and the suite is the check.
+**A capture is checked against the vault before it is filed.** `similar_notes.py --sources` scores a draft against in-scope sources and the inbox as well as the wiki, never reading an out-of-scope, unruled or ignored folder, and WRITE capture runs it as step 0, offering a comment on the existing source instead of a second copy. The source cut-offs were calibrated on the vault itself: an exact copy scores 0.99, a two-sentence paraphrase 0.45, new material under 0.15, and from 0.60 up the best match between existing sources was almost always a real duplicate (a sync-conflict copy, a `-AA-mdh` twin, a v2 beside its v3).
+
+**Wiki notes carry the names their sources use.** `aliases:` holds two to four names, each found in one of the note's own sources, so a note titled in English is found by the Dutch or French its sources use. `apply_aliases.py` is the only writer and refuses a name no source carries; PROCESS sets them on new and rebuilt notes, DREAM phase 6 backfills twenty a night, and conformance counts what is left (185 notes at release).
+
+**A search index for searches that cannot open files.** `gen_search.py` writes `augment_wiki/search.json` at the end of DREAM phase 7: titles, aliases, keywords, a one-line summary and cited sources per note, and the in-scope sources with the notes citing them, already tokenised. The connector's `vault_search` reads it, and its `capture_note` names likely duplicates.
+
+**Routing tests for the skills.** `evals/routing/` holds 41 requests, three or four per skill, phrased the way a person would type them, graded on which skill Claude loads, with the memory/content boundary weighted in: a client's requirement must reach `write` and not `remember`, a tool quirk `remember` and not `write`. Run with `claude plugin eval . --ablation none --tag routing --scaffold`. On 2026-09-29 the default model routed all 41 correctly; Haiku routed 23, confusing the sweep with the nightly cycle, recall with answer, and a client's drawing convention with the person's own. Those descriptions are sharpened in this release, below, and the suite is the check.
+
+### Improvement
+
+**Eight skill descriptions name their neighbours**, against the routing tests: the weekly sweep is `verify`, not `dream`; digesting particular sources is `process`; how Claude did something before is `recall`, not `answer`; a client's or project's requirement is `write`, not `remember`. The default model routes all 41 test requests correctly before and after; Haiku went from 23 to 26.
+
+**Accents fold in the memory tokeniser**, so `réemploi` and `reemploi` are one word; no card's duplicate report changes.
+
+**One resolver for source ids**, `_gen_util.source_path`, used wherever a script opens a source by id. No behaviour change; it is where a later read-only mounted source root would be resolved.
 
 ## v2026-09-29
 

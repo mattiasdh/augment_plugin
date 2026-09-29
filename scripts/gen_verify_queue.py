@@ -10,7 +10,7 @@ log. That curated tail is preserved untouched. Run from the vault root.
 """
 import glob, json, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _gen_util import stamp, load_config, scope_of, undecided_folders, display_path
+from _gen_util import stamp, load_config, scope_of, undecided_folders, display_path, source_path
 from detect_changes import is_source_entry, likely_rename
 from collections import Counter
 
@@ -74,7 +74,7 @@ def main():
     # a 34-source project-folder reorganisation into year subfolders).
     pending_rename_targets = set()
     for e in idx:
-        if is_source_entry(e) and not os.path.exists(os.path.join(ROOT, e["id"])):
+        if is_source_entry(e) and not os.path.exists(source_path(ROOT, e["id"])):
             t = likely_rename(e["id"], e["hash"], ROOT, cfg, {x["id"] for x in idx})
             if t:
                 pending_rename_targets.add(t)
@@ -108,7 +108,7 @@ def main():
 
     def _lines(rel):
         try:
-            with open(os.path.join(ROOT, rel), encoding="utf-8", errors="replace") as fh:
+            with open(source_path(ROOT, rel), encoding="utf-8", errors="replace") as fh:
                 return sum(1 for _ in fh)
         except OSError:
             return 0

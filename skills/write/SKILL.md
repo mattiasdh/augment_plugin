@@ -1,6 +1,6 @@
 ---
 name: write
-description: Write into the source layer, the person's own authoritative notes. Use to capture or store something, note this down, file a memo, attach a comment or caveat to an existing source, or record that a wiki note is wrong. Covers capture, comment and correction, which are three shapes of the same act and share one set of hard rules. Never writes a wiki note.
+description: Put something into the person's notes, the source layer. Use when the person asks to note something down, capture or store it in their notes, file a memo, record a client's or project's requirement or preference, attach a comment or caveat to an existing source, or record that a wiki note is wrong. Covers capture, comment and correction, three shapes of the same act sharing one set of hard rules. Never writes a wiki note. Not a lesson about how Claude should work next time, a tool's behaviour or a reusable script, which remember records.
 ---
 
 # Write
@@ -33,6 +33,14 @@ Read `rules/freshness.md` and run the check first. Read `rules/write-flow.md` as
 **Default to `#to-process`.** Use `#excluded` when the person says so, or when the material is client-confidential and they have not said to process it, and ask rather than assume.
 
 ## Capture
+
+**0. Check it is not already there.** A second copy of something the person already holds splits it in two, and each half then compiles on its own. Before drafting the file, score the draft against the wiki and the source layer:
+
+```
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/similar_notes.py" <vault> --sources --title "<title>" --text-file <draft>
+```
+
+It reads only what scope allows, plus the inbox. On a `source` hit marked `LIKELY SAME`, read it: if it already holds the material, offer a comment on that source instead, and capture only when the person confirms the new material differs. On a `wiki` hit, say the content is already compiled, naming the note and its sources, and let the person decide. Read the top `RELATED` hit too, since a short paraphrase of an existing note lands there. In Tier 2 the same call goes through `run_script`.
 
 **1. The destination decides whether processing follows.** Where the person names a home in the source tree, write there, and the note is in scope and ready. Otherwise write to `_inbox/`, which is the default: inbox notes are unaddressed and out of scope until the person assigns them an address. **Never invent an address**, and never infer one from the session's topic.
 

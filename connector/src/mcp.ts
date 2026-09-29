@@ -104,7 +104,7 @@ export const TOOLS: Tool[] = [
   },
   {
     name: "vault_search",
-    description: "Find wiki notes and in-scope sources by title and path, from the vault's index. Read the hits with vault_read; a wiki note's sources: list leads to the sources behind it.",
+    description: "Find wiki notes by title, aliases (the names their Dutch or French sources use), keywords and summary, and in-scope sources by path. Search in any of the vault's languages. Read the hits with vault_read; a wiki note's sources: list leads to the sources behind it.",
     inputSchema: { type: "object", required: ["query"], properties: {
       query: str("Words a title or path would carry."), include_sources: { type: "boolean", description: "Also match source file paths. Default true." },
       limit: { type: "integer", minimum: 1, maximum: 50 } } },
