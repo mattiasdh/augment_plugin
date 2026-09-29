@@ -2,6 +2,12 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag.
 
+## Unreleased
+
+### New feature
+
+**Routing tests for the skills.** `evals/routing/` holds 41 requests, three or four per skill, phrased the way a person would type them, graded on which skill Claude loads, with the memory/content boundary weighted in: a client's requirement must reach `write` and not `remember`, a tool quirk `remember` and not `write`. Run with `claude plugin eval . --ablation none --tag routing --scaffold`. On 2026-09-29 the default model routed all 41 correctly; Haiku routed 23, confusing the sweep with the nightly cycle, recall with answer, and a client's drawing convention with the person's own. Those descriptions are sharpened in the next release, and the suite is the check.
+
 ## v2026-09-29
 
 ### Improvement
