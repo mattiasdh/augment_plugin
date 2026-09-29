@@ -2,6 +2,12 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag.
 
+## v2026-09-29
+
+### Improvement
+
+**The sweep sees the memory layer's state even on a night the cycle skips it.** `gen_verify_queue.py` now writes a generated Memory section from `gen_memory_index.py --check`, so `LIKELY SAME`, `DECAY`, `OFFER` and `DEFECT` lines reach the queue on every regeneration; on 2026-09-28 and 2026-09-29 the nightly cycle skipped phase 7b and nothing showed it.
+
 ## v2026-09-28
 
 ### Bug fix

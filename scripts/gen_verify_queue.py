@@ -253,6 +253,30 @@ def main():
     else:
         H.append("None since the last sweep." if last_verify else
                  "None recorded. The cycle has written nothing unattended yet.")
+    # Memory, read-only: gen_memory_index.py's own report, run with --check so the
+    # index is left alone. DREAM's phase 7b acts on these lines, and the sweep's
+    # step 2b decides them. Generated here, and not left to 7b's report alone,
+    # because on 2026-09-28 and 2026-09-29 the nightly cycle skipped 7b and nothing
+    # showed it: every cycle regenerates this header, so memory state now reaches
+    # the sweep whether or not the phase ran.
+    if os.path.isdir(os.path.join(ROOT, "augment_memory", "card")):
+        import subprocess
+        try:
+            r = subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                                             "gen_memory_index.py"), ROOT, "--check"],
+                               capture_output=True, text=True, timeout=120)
+            mem = [l for l in (r.stdout or "").splitlines() if l.strip()]
+            if r.returncode not in (0, 1):
+                mem.append(f"gen_memory_index.py exited {r.returncode}: "
+                           f"{(r.stderr or '').strip().splitlines()[-1:] or ['no message']}")
+        except Exception as e:
+            mem = [f"gen_memory_index.py could not run: {e}"]
+        H += ["", "## Memory (generated)", "",
+              "The memory layer as `gen_memory_index.py --check` reports it. `LIKELY SAME` pairs "
+              "are DREAM's to merge in phase 7b; `DECAY`, `OFFER` and a `DEFECT` it could not fix "
+              "are the sweep's, step 2b. Findings still listed after a night mean phase 7b did not "
+              "act on them.", ""]
+        H += [f"- {l.strip()}" for l in mem] or ["- no report"]
     H += ["", ""]
 
     # Match the marker only as a heading at line start, never its mention inside
