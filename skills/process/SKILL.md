@@ -56,7 +56,13 @@ Pass the drafted opening, not the title alone: a title under-reads, since a diff
 
 Prefer extending an existing note over creating a near-duplicate. Where uncertain, say so rather than guessing, since a wrong merge costs more than a flagged doubt.
 
-**7. Write or extend.** A new unit becomes a new note in its type's body shape, `#current`. An existing concept gaining a new source gets the citation added and is marked `#stale`, because its input set changed. A hub gaining a new source gets the link and an incremented unincorporated count, and is not marked stale.
+**7. Write or extend.** A new unit becomes a new note in its type's body shape, `#current`. An existing concept gaining a new source gets the citation added and is marked `#stale`, because its input set changed. A hub gaining a new source gets the link and an incremented unincorporated count, and is not marked stale. Give a new or rebuilt concept or entity its aliases in the same pass, two to four names its sources use in their own language, as `reference/note-shape.md` sets out:
+
+```
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply_aliases.py" <vault> <slug> "name one" "name two" --reason "names the sources use"
+```
+
+The script refuses any alias no source carries; take that as a sign the name was translated rather than found, and drop it.
 
 **8. Write link contexts** in the shape `reference/links.md` gives, each with its source. If the reason cannot be traced to a source, do not write the link.
 

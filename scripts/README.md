@@ -11,7 +11,7 @@ Deterministic implementations, **run and never read into context**. Every one ta
 | `conformance.py` | The wiki-integrity gate. Exit 1 on defects, advisories are non-blocking. Run before every commit. |
 | `hash_source.py` | One file's content hash. The byte rule is exact; never reimplement it. |
 | `release_check.py` | Typography and register on a file about to be released. |
-| `similar_notes.py` | Scores a candidate title and drafted opening against every wiki note before a mint, with the relations view's own TF-IDF; `LIKELY SAME` at 0.30. PROCESS step 6 and MINT step 2. |
+| `similar_notes.py` | Scores a candidate title and drafted opening against every wiki note before a mint, with the relations view's own TF-IDF; `LIKELY SAME` at 0.30. PROCESS step 6 and MINT step 2. `--sources` also scores in-scope sources and the inbox before a WRITE capture, `LIKELY SAME` at 0.60 for a source. |
 | `rewrite_check.py` | What a rewrite actually changed, against a revision or a section. |
 | `write_flow_register.py` | Re-asserts the writing register on a prose-shaped prompt. Hook only. |
 | `ledger_guard.py` | Whether `history.jsonl` stayed append-only across the last commits, merges included. Conformance runs it and reports a `LEDGER LOSS` advisory; an entry with `"acknowledges": "<sha>"` clears a loss already repaired. |
@@ -22,6 +22,7 @@ Deterministic implementations, **run and never read into context**. Every one ta
 | Script | What it does |
 |---|---|
 | `compact_index.py` | Rebuilds `index.jsonl` from `history.jsonl`, last entry per id. **Never hand-edit the index**; append to history and run this. |
+| `apply_aliases.py` | Writes a wiki note's `aliases:`, refusing any name none of its sources carries. `--auto --run <id> --reason` marks the nightly backfill. |
 | `apply_keywords.py` | Applies keyword and anchor writes to note bodies and records them. `--auto --run <id> --reason` marks an unattended write. |
 | `undo_run.py` | Reverts every write a run made. `--dry-run` first; `--only slugA::slugB` for a single one. |
 | `dismiss_pairs.py` | Appends declined convergence pairs to the sidecar, so a rejected pair does not resurface. |
@@ -42,6 +43,7 @@ Each rewrites one derived file and prints a one-line summary. None of them decid
 | `gen_timeline.py` | `view/timeline.md`, dated decisions per project |
 | `gen_relations.py` | `view/relations.md`, the relationship overlay and the candidate lanes |
 | `gen_verify_queue.py` | the generated half of `verify-queue.md` |
+| `gen_search.py` | `search.json`, titles, aliases, keywords, a one-line summary and cited sources per note, plus the in-scope sources, for a search that cannot open files |
 
 ## Memory
 

@@ -2,7 +2,7 @@
 
 ## Frontmatter
 
-**Wiki-note metadata is YAML frontmatter**, in the key order `type`, `kind`, `status`, `generated`, `sources`, `further_sources`, `keywords`: identity, then lifecycle, then provenance, then navigation. A `kind: person` entity carries one further optional identity key, `public_figure: true`, between `kind` and `status`. The body below the fence is uninterrupted prose, beginning at the title.
+**Wiki-note metadata is YAML frontmatter**, in the key order `type`, `kind`, `status`, `generated`, `sources`, `further_sources`, `keywords`, `aliases`: identity, then lifecycle, then provenance, then navigation. A `kind: person` entity carries one further optional identity key, `public_figure: true`, between `kind` and `status`. The body below the fence is uninterrupted prose, beginning at the title.
 
 ```markdown
 ---
@@ -28,6 +28,8 @@ Body prose, every sentence traceable to a cited source.
 **Quote the wikilinks.** A bare `[[x]]` in YAML parses as a nested sequence, so links are written `"[[x]]"`. The generators emit them quoted and one shared reader parses them, rather than a regex per script.
 
 `keywords` is optional and omitted when empty. It is the note's lightweight navigational layer, distinct from the sourced links block.
+
+**`aliases` are the other names a note is searched by, and each must appear in one of the note's own sources.** The wiki is written in one language while its sources are not, so a note titled in English is missed by a search in the Dutch or French its sources use. Two to four plain strings, Obsidian's native key, read by Obsidian's search and link completion and by the connector's `vault_search`: the term a source actually uses (`réemploi`, `bouwheer`), never a translation the model supplies, and never the title or slug again. Plain strings, not wikilinks, since an alias names this note rather than pointing at another. They are written only through `apply_aliases.py`, which refuses any alias it cannot find in the note's sources. Optional and omitted when empty; a theme or hub, which cites no source, carries none.
 
 **`generated.at` carries `YYYY-MM-DD HH:MM` in the writing machine's local time.** It means when this note's content last moved. A note can be written several times in one day, and a date alone cannot order those writes or show that a note was touched after the run that read it. Local rather than UTC, because the person reads these stamps against their own day and a source written by hand is stamped in local time by whatever tooling writes it. The offset is not recorded. Build provenance, which sources a note was compiled from and at which hashes, stays in the index rather than the note: it is machine state, it changes on every rebuild, and it would clutter the page without telling a reader anything they came for.
 

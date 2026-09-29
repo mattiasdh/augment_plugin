@@ -182,7 +182,7 @@ def links_in(value):
     return out
 
 
-FM_ORDER = ["type", "kind", "status", "generated", "sources", "further_sources", "keywords"]
+FM_ORDER = ["type", "kind", "status", "generated", "sources", "further_sources", "keywords", "aliases"]
 
 
 def fm_block(**fields):

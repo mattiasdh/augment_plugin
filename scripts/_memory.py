@@ -69,9 +69,15 @@ def slugify(title):
     return s[:70].rstrip("-") or "memory"
 
 
+def fold(text):
+    """Lower case with accents dropped, so `réemploi` and `reemploi` are one word."""
+    t = unicodedata.normalize("NFKD", str(text))
+    return "".join(c for c in t if not unicodedata.combining(c)).lower()
+
+
 def tokens(text):
     out = set()
-    for w in re.findall(r"[a-z0-9][a-z0-9_\-]{1,}", unicodedata.normalize("NFKD", str(text)).lower()):
+    for w in re.findall(r"[a-z0-9][a-z0-9_\-]{1,}", fold(text)):
         for part in re.split(r"[_\-]", w) + [w]:
             if len(part) >= 3 and part not in STOP:
                 out.add(part[:-1] if part.endswith("s") and len(part) > 4 else part)
