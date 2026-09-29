@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { Memory, render, slugify, tokens, jaccard, cardTokens, settingsFrom } from "../src/memory";
 import { serve, TOOLS } from "../src/mcp";
 import * as vault from "../src/vault";
-import { CONFIG, FakeRepo, INDEX } from "./fake";
+import { CONFIG, FakeRepo, INDEX, SEARCH } from "./fake";
 
 const NOW = "2026-09-27 14:02";
 const BY = "augment/connector";
@@ -32,6 +32,7 @@ describe.runIf(havePython)("parity with the plugin's Python", () => {
     "Déliverable naming: YYMMDD_project_subject.pdf (always)",
     "git push --force-with-lease, never plain --force",
     "Reuse the pdf2md skill's links/ folder",
+    "La maîtrise d'ouvrage et le réemploi, façade",
   ];
 
   it("tokenises, slugifies and scores as _memory.py does", () => {
@@ -175,6 +176,49 @@ describe("vault", () => {
     const mine = (await repo.read("notes/_inbox/My own words.md"))!.text;
     expect(mine).not.toContain("assisted_by");
     expect(mine).not.toContain("[!ai]");
+  });
+});
+
+describe("config sections", () => {
+  it("parses the sections the connector reads exactly as the whole file", async () => {
+    const { parse } = await import("yaml");
+    const full = parse(CONFIG) as Record<string, unknown>;
+    const part = parse(vault.configSections(CONFIG)) as Record<string, unknown>;
+    for (const k of ["scope", "source_root", "memory"]) expect(part[k]).toEqual(full[k]);
+    expect(part.house_language).toBeUndefined();
+  });
+});
+
+describe("search.json", () => {
+  const withSearch = () => vaultRepo({ "augment_wiki/search.json": SEARCH });
+
+  it("finds a note by an alias in its sources' language, accents or not", async () => {
+    for (const q of ["réemploi", "reemploi", "hergebruik"]) {
+      expect(await vault.search(withSearch(), q)).toContain("augment_wiki/concept/belgian-reuse-channels.md");
+    }
+    expect(await vault.search(withSearch(), "tempolagen")).toContain("pace-layering.md");
+  });
+
+  it("ranks the note above its source and never lists an out-of-scope source", async () => {
+    const out = await vault.search(withSearch(), "pace layering");
+    expect(out.indexOf("augment_wiki/concept/pace-layering.md")).toBeLessThan(out.indexOf("notes/40_LIBRARY/Pace layering.md"));
+    expect(out).toContain("cited by 1 note(s)");
+    expect(out).not.toContain("PERSONAL");
+  });
+
+  it("falls back to index.jsonl when search.json is absent", async () => {
+    const out = await vault.search(vaultRepo(), "pace layering");
+    expect(out).toContain("augment_wiki/concept/pace-layering.md");
+    expect(await vault.search(vaultRepo(), "reemploi")).toMatch(/^nothing in the index matches/);
+  });
+
+  it("warns on a capture that looks like a note already there, and still writes it", async () => {
+    const repo = withSearch();
+    const r = await vault.capture(repo, { title: "Pace layering orders change", body: "x", authorship: "model" }, NOW, BY);
+    expect(r).toContain("captured notes/_inbox/Pace layering orders change.md");
+    expect(r).toMatch(/Possible duplicates already in the vault: augment_wiki\/concept\/pace-layering.md/);
+    const clean = await vault.capture(repo, { title: "Rainwater cistern sizing", body: "x", authorship: "model" }, NOW, BY);
+    expect(clean).not.toContain("Possible duplicates");
   });
 });
 

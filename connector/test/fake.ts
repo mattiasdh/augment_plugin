@@ -55,6 +55,20 @@ scope:
       in_scope: true
 `;
 
+export const SEARCH = JSON.stringify({
+  schema: 1,
+  notes: [
+    { id: "augment_wiki/concept/pace-layering.md", title: "Pace layering orders change by speed", type: "concept", kind: "model", status: "#current",
+      aliases: ["tempolagen"], keywords: ["shearing-layers"], summary: "Fast layers learn, slow layers remember.", sources: ["notes/40_LIBRARY/Pace layering.md"] },
+    { id: "augment_wiki/concept/belgian-reuse-channels.md", title: "Belgium's material-reuse channels", type: "concept", kind: "model", status: "#current",
+      aliases: ["réemploi", "hergebruik"], keywords: [], summary: "Rotor and Opalis list reuse dealers.", sources: [] },
+  ],
+  sources: [
+    { id: "notes/40_LIBRARY/Pace layering.md", cited_by: ["augment_wiki/concept/pace-layering.md"] },
+    { id: "notes/PERSONAL/Diary pace.md", cited_by: [] },
+  ],
+});
+
 export const INDEX = [
   { id: "augment_wiki/concept/pace-layering.md", type: "concept", kind: "model", title: "Pace layering orders change by speed", status: "#current" },
   { id: "notes/40_LIBRARY/Pace layering.md", status: "processed" },

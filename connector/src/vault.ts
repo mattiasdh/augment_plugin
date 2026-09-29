@@ -18,7 +18,7 @@ export type Config = Record<string, unknown>;
 interface Rule { path?: string; in_scope?: boolean }
 interface Entry { id: string; title?: string; type?: string; kind?: string; status?: string; renamed_to?: string; deleted?: unknown; produced?: string[] }
 
-const TTL_MS = 60_000;
+const TTL_MS = 300_000;  // five minutes: fewer cold loads, and a scope change still arrives within minutes
 const cache = new Map<string, { at: number; value: unknown }>();
 
 async function cached<T>(key: string, load: () => Promise<T>): Promise<T> {
@@ -31,11 +31,32 @@ async function cached<T>(key: string, load: () => Promise<T>): Promise<T> {
 
 export function clearCache() { cache.clear(); }
 
+/**
+ * The top-level sections of config.yaml the connector reads, and nothing else. The
+ * file is mostly commentary and declarations the connector never uses, and parsing
+ * all of it took more than half of a cold request's CPU on the free plan. A section
+ * starts at a key in column 0 and runs to the next; a column-0 comment is dropped,
+ * which is safe because YAML indents every line of a block scalar.
+ */
+const CONFIG_SECTIONS = ["scope", "source_root", "memory"];
+
+export function configSections(text: string, keep = CONFIG_SECTIONS): string {
+  const out: string[] = [];
+  let on = false;
+  for (const line of text.split("\n")) {
+    const m = /^([A-Za-z_][\w-]*):/.exec(line);
+    if (m) on = keep.includes(m[1]);
+    else if (line.startsWith("#")) continue;
+    if (on) out.push(line);
+  }
+  return out.join("\n");
+}
+
 export async function loadConfig(repo: Repo, key = ""): Promise<Config> {
   return cached(`config:${key}`, async () => {
     const f = await repo.read("augment_wiki/config.yaml");
     if (!f) throw new Refused("no augment_wiki/config.yaml in the repository; this is not an augment vault");
-    const c = parseYaml(f.text);
+    const c = parseYaml(configSections(f.text));
     return c && typeof c === "object" ? (c as Config) : {};
   });
 }
@@ -102,7 +123,111 @@ export async function read(repo: Repo, path: string): Promise<string> {
   return f.text;
 }
 
+interface SearchNote { id: string; title?: string; type?: string; kind?: string; status?: string; aliases?: string[]; keywords?: string[]; summary?: string; sources?: string[];
+  w?: Record<string, number>; d?: string[] }
+interface SearchSource { id: string; cited_by?: string[]; t?: string[]; n?: string[] }
+interface SearchIndex { notes: SearchNote[]; sources: SearchSource[] }
+interface Prepared {
+  notes: { n: SearchNote; weight: Map<string, number>; named: Set<string> }[];
+  sources: { s: SearchSource; words: Set<string>; name: Set<string> }[];
+}
+
+/** A note's word weights (title and aliases 3, keywords 2, summary 1), as gen_search.py writes them into `w`. */
+function weigh(n: SearchNote): { weight: Map<string, number>; named: Set<string> } {
+  if (n.w && n.d) return { weight: new Map(Object.entries(n.w)), named: new Set(n.d) };
+  const named = new Set([...tokens(`${n.title ?? ""} ${n.id.split("/").pop()}`), ...tokens((n.aliases ?? []).join(" "))]);
+  const weight = new Map<string, number>();
+  for (const t of tokens(n.summary ?? "")) weight.set(t, 1);
+  for (const t of tokens((n.keywords ?? []).join(" "))) weight.set(t, 2);
+  for (const t of named) weight.set(t, 3);
+  return { weight, named };
+}
+
+/**
+ * augment_wiki/search.json, written by the plugin's gen_search.py, tokenised once when
+ * loaded so a query costs only set lookups: the free plan allows 10 ms of CPU a
+ * request, and re-tokenising every note per query took twice that. Null on a vault
+ * that has no search.json yet.
+ */
+async function loadSearch(repo: Repo, key = ""): Promise<Prepared | null> {
+  return cached(`search:${key}`, async () => {
+    const f = await repo.read("augment_wiki/search.json");
+    if (!f) return null;
+    let d: SearchIndex;
+    try {
+      d = JSON.parse(f.text) as SearchIndex;
+    } catch {
+      return null;
+    }
+    if (!Array.isArray(d.notes) || !Array.isArray(d.sources)) return null;
+    return {
+      notes: d.notes.map((n) => ({ n, ...weigh(n) })),
+      sources: d.sources.map((s) => ({
+        s,
+        words: s.t ? new Set(s.t) : tokens(s.id.replace(/\.md$/, "")),
+        name: s.n ? new Set(s.n) : tokens(s.id.split("/").pop()!.replace(/\.md$/, "")),
+      })),
+    };
+  });
+}
+
+/** Per query word, the strongest field it appears in. */
+function scoreNote(qt: Set<string>, p: Prepared["notes"][number]): number {
+  let s = 0;
+  for (const t of qt) s += p.weight.get(t) ?? 0;
+  return s;
+}
+
 export async function search(repo: Repo, query: string, opts: { limit?: number; sources?: boolean } = {}): Promise<string> {
+  const idx = await loadSearch(repo);
+  if (!idx) return searchIndexOnly(repo, query, opts);
+  const qt = tokens(query);
+  if (!qt.size) throw new Refused("no searchable words in the query");
+  const config = await loadConfig(repo);
+  const hits: [number, number, string][] = [];
+  for (const p of idx.notes) {
+    const s = scoreNote(qt, p);
+    if (!s) continue;
+    const n = p.n;
+    const al = n.aliases?.length ? `  (also: ${n.aliases.join(", ")})` : "";
+    hits.push([s, 1, `${n.id}  [${n.type ?? "note"}${n.kind ? ` ${n.kind}` : ""}, ${n.status ?? ""}] ${n.title ?? ""}${al}`]);
+  }
+  if (opts.sources !== false) {
+    for (const { s: src, words } of idx.sources) {
+      let s = 0;
+      for (const t of qt) s += +words.has(t);
+      if (s && scopeOf(src.id, config) === "in") hits.push([s, 0, `${src.id}  [source, cited by ${(src.cited_by ?? []).length} note(s)]`]);
+    }
+  }
+  hits.sort((a, b) => b[0] - a[0] || b[1] - a[1] || (a[2] < b[2] ? -1 : 1));
+  if (!hits.length) return `nothing matches: ${[...qt].sort().join(" ")}. Titles, aliases, keywords, summaries and source paths were searched; try the names a note or its sources would use.`;
+  const limit = opts.limit ?? 15;
+  const lines = hits.slice(0, limit).map(([s, , l]) => `${String(s).padStart(3)}  ${l}`);
+  if (hits.length > limit) lines.push(`... ${hits.length - limit} more; narrow the query`);
+  return lines.join("\n");
+}
+
+/** Possible duplicates of a capture title, from search.json: a note or source carrying most of its words. */
+export async function likelyDuplicates(repo: Repo, title: string): Promise<string[]> {
+  const idx = await loadSearch(repo);
+  const qt = tokens(title);
+  if (!idx || qt.size < 2) return [];
+  const config = await loadConfig(repo);
+  const out: [number, string][] = [];
+  const share = (words: Set<string>) => [...qt].filter((t) => words.has(t)).length / qt.size;
+  for (const p of idx.notes) {
+    const r = share(p.named);
+    if (r >= 0.6) out.push([r, `${p.n.id} (${p.n.title ?? ""})`]);
+  }
+  for (const { s, name } of idx.sources) {
+    const r = share(name);
+    if (r >= 0.6 && scopeOf(s.id, config) === "in") out.push([r, s.id]);
+  }
+  return out.sort((a, b) => b[0] - a[0]).slice(0, 5).map(([, l]) => l);
+}
+
+/** The pre-search.json path: titles and paths from index.jsonl. */
+async function searchIndexOnly(repo: Repo, query: string, opts: { limit?: number; sources?: boolean } = {}): Promise<string> {
   const qt = tokens(query);
   if (!qt.size) throw new Refused("no searchable words in the query");
   const [config, index] = [await loadConfig(repo), await loadIndex(repo)];
@@ -152,6 +277,8 @@ export async function capture(repo: Repo, a: { title: string; body: string; auth
   const text = fm.join("\n") + "\n---\n\n" + body;
   const r = await repo.write(path, text, `CAPTURE: ${name}\n\n${a.authorship === "model" ? `Assisted-by: ${by}\n` : ""}`);
   if (r !== "ok") throw new Refused(`${path} exists already; choose a title that says what differs`);
-  return `captured ${path}. It sits in the inbox, unaddressed and out of scope, until the person files it at the weekly sweep.`;
+  const dup = await likelyDuplicates(repo, title);
+  const warn = dup.length ? `\nPossible duplicates already in the vault: ${dup.join("; ")}. If one of them already holds this, tell the person, and prefer memory_offer with kind comment and that note as target next time.` : "";
+  return `captured ${path}. It sits in the inbox, unaddressed and out of scope, until the person files it at the weekly sweep.${warn}`;
 }
 

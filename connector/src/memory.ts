@@ -59,9 +59,14 @@ export function slugify(title: string): string {
   return s.slice(0, 70).replace(/-+$/, "") || "memory";
 }
 
+/** Lower case with accents dropped, so `réemploi` and `reemploi` are one word (as _memory.fold). */
+export function fold(text: unknown): string {
+  return String(text ?? "").normalize("NFKD").replace(/\p{Mn}/gu, "").toLowerCase();
+}
+
 export function tokens(text: unknown): Set<string> {
   const out = new Set<string>();
-  const words = String(text ?? "").normalize("NFKD").toLowerCase().match(/[a-z0-9][a-z0-9_\-]{1,}/g) || [];
+  const words = fold(text).match(/[a-z0-9][a-z0-9_\-]{1,}/g) || [];
   for (const w of words) {
     for (const part of [...w.split(/[_\-]/), w]) {
       if (part.length >= 3 && !STOP.has(part)) out.add(part.endsWith("s") && part.length > 4 ? part.slice(0, -1) : part);
