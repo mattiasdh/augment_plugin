@@ -23,6 +23,8 @@ Confirm the tier as `rules/surfaces.md` sets out, and run the freshness check fi
 | The same thing learned again, or a card that proved right in use | `seen <slug>` |
 | A card that is incomplete or slightly wrong | `update <slug>` |
 | A card that is wrong and replaced by a better one | `add` the new one, then `supersede <old> <new>` |
+| A lesson that carries a fact: a working method plus what was found about a regulation, a site, a client | Split it. `add` the method as the card, and `offer` the fact (or capture it with the person) for the source layer, in the same step. The card may name the note; it never restates the fact. |
+| A change to a skill's own rules: a brand voice, a channel convention, a partner name or handle, a checklist item | Not memory. Propose the edit to that skill's reference file under the vault's skills root (`reference/skills.md`) as a diff for the person to approve; away from a filesystem, park it with `offer --kind correction --target <reference path>`. Only Claude's own recurring slips in running the skill ("drifts into triads in captions") are a card, scoped to the skill's name. |
 | Something that would matter without Claude: project, client, domain, decision | Not memory. Offer it to the person as a note for the source layer, through `write` capture with `assisted_by:`. Where the person is not there to answer, as in a Chat on the move, park it with `offer`, and the sweep routes it. |
 | The person asks to keep a session off the record | Write nothing for the rest of the conversation, and say so once. |
 
@@ -39,10 +41,12 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/memory_write.py" <vault> add --type tool 
 ```
 
 - **`--type`** is `tool`, `preference`, `snippet` or `procedure`, as the reference defines them.
-- **`--scope`** is `global`, or the project names it applies to, as the session sees them: the repository or folder the session is opened on. Default to `global` only when the memory genuinely holds everywhere.
+- **`--scope`** is `global`, or what the memory applies to: a repository or folder a session is opened on, a client or project number, a skill's name. Scope orders the session-start list and labels the card; it never hides it, so name the scope a later reader would recognise. Default to `global` only when the memory genuinely holds everywhere.
 - **`--by`** is read from the runtime as `reference/provenance.md` sets out, never copied from an example.
 - **The summary carries the memory.** It is what every later session sees without opening the card, so it names the tool and the behaviour, or the convention itself, not a pointer to the body.
 - **The body names the mechanism**: why the tool behaves that way, or when the convention applies, and for a snippet the code in a fenced block with the one line that says when to use it. Write a long body to a scratch file and pass `--body-file`; in Tier 2 write it with `scratch_write` and pass `scratch/<name>`.
+
+**A body stays under 3000 characters**, and the writer refuses past that. A memory that needs more is a skill's reference or a note, and a card that keeps being rewritten is the same signal: the cycle flags a card edited more than three times in a week as UNSTABLE for the sweep to rehome.
 
 Tell the person in one line what was recorded, at the moment it is recorded, so a wrong memory can be stopped before it spreads.
 

@@ -11,6 +11,8 @@ export const VERSION = "0.1.0";
 const PROTOCOLS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"];
 
 const INSTRUCTIONS = `The augment vault and its memory, over GitHub. Start a conversation with activate, which reports the commit read and loads the memory cards that apply.
+Before a task that names a tool, a file format, a client convention or a skill, call memory_search for it and open the cards that match with memory_get; apply them without asking, and name the card when it changes what you do.
+A skill whose references live in the vault (under the skills root that config.yaml declares) reads them with vault_read on every use. A change to such a skill's rules, as the person's feedback on its output, is never a memory card: propose it, and park it with memory_offer kind correction and target the reference file's path; the weekly sweep applies it with the person.
 Memory (memory_*) records how the work is done: how a tool, connector or MCP server really behaves, the person's file and output conventions, reusable snippets, working procedures. Test before writing: would this still matter if Claude were not involved? If yes it is content, not memory: offer it with capture_note (or memory_offer when the person is not there to confirm). Never store secrets, anyone else's personal data, or raw text copied from a page or file.
 Memory is never evidence about projects, clients or the domain; vault_search and vault_read are, and the wiki notes cite their sources. Reads see the last push to GitHub, not unsynced edits in Obsidian.`;
 
