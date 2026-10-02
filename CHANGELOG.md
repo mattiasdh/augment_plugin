@@ -2,6 +2,25 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag. A second release on the same day adds a revision letter: `v2026-09-29 Rev. A` here, `2026.9.29-revA` in `plugin.json`.
 
+## v2026-10-02 Rev. A
+
+### New feature
+
+**The connector works under the same rules as every other surface, with the same file primitives as Tier 2.** `rules/surfaces.md` gains a Connector column beside Tier 1 and Tier 2, under one Never list that the connector also checks in code. New tools:
+- `vault_list`: a folder's notes and subfolders, as far as the reading rules open it.
+- `vault_write`: a whole note; never an existing source.
+- `vault_edit`: one exact passage of a skill's file, with its CHANGELOG line.
+- `source_set` and `source_callout`: ports of `source_write.py` `set` and `callout`, held to the Python by parity tests on LF, CRLF, BOM, bare-form and untitled files, and to `hash_source.py` for the content hash.
+- `append_history`: ledger entries, parked in `augment_wiki/history.pending/`, because GitHub cannot append to a file. `compact_index.py` now merges them first, and DREAM runs it as phase 0.
+
+Every connector write is one commit against the head it read, through GitHub's `createCommitOnBranch`; a memory card and its index now land together. What the connector still cannot do is run scripts, so process, mint and dream say so through it and name the surfaces that can, a Claude Code session on the vault from the Claude app among them.
+
+### Improvement
+
+- The per-prompt recall counts generic vault and tool words ("connector", "write", "file", "note"...) at a third, so they confirm a card but cannot carry it alone. "Can the connector write files" no longer names the Coda card.
+- DREAM rebuilds the upload packages of vault-held skills nightly (`package_skill.py --all`).
+- Conformance reports parked ledger files.
+
 ## v2026-10-02
 
 ### New feature

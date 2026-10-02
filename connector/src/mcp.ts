@@ -6,6 +6,7 @@
 import type { Repo } from "./github";
 import { Memory, Refused, TYPES, settingsFrom } from "./memory";
 import * as vault from "./vault";
+import * as w from "./write";
 
 export const VERSION = "0.1.0";
 const PROTOCOLS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"];
@@ -14,7 +15,8 @@ const INSTRUCTIONS = `The augment vault and its memory, over GitHub. Start a con
 Before a task that names a tool, a file format, a client convention or a skill, call memory_search for it and open the cards that match with memory_get; apply them without asking, and name the card when it changes what you do.
 A skill whose references live in the vault (under the skills root that config.yaml declares) reads them with vault_read on every use. A change to such a skill's rules, as the person's feedback on its output, is never a memory card: propose it, and park it with memory_offer kind correction and target the reference file's path; the weekly sweep applies it with the person.
 Memory (memory_*) records how the work is done: how a tool, connector or MCP server really behaves, the person's file and output conventions, reusable snippets, working procedures. Test before writing: would this still matter if Claude were not involved? If yes it is content, not memory: offer it with capture_note (or memory_offer when the person is not there to confirm). Never store secrets, anyone else's personal data, or raw text copied from a page or file.
-Memory is never evidence about projects, clients or the domain; vault_search and vault_read are, and the wiki notes cite their sources. Reads see the last push to GitHub, not unsynced edits in Obsidian.`;
+Memory is never evidence about projects, clients or the domain; vault_search and vault_read are, and the wiki notes cite their sources. Reads see the last push to GitHub, not unsynced edits in Obsidian.
+Writes follow the same rules as every other surface (the plugin's rules/surfaces.md, Connector column): sources are append-only (source_callout, source_set), memory goes through memory_*, nothing is deleted or moved, closed folders stay closed. What needs the plugin's scripts (process, mint, dream, the sweep's checks) cannot run here: say so, and point to a Claude Code session on the vault, which runs them in full from the Claude app too.`;
 
 type Args = Record<string, unknown>;
 interface Tool { name: string; description: string; inputSchema: object; run: (a: Args, ctx: Ctx) => Promise<string> }
@@ -129,6 +131,51 @@ export const TOOLS: Tool[] = [
       const authorship = a.authorship === "person" ? "person" : "model";
       return vault.capture(ctx.repo, { title: String(a.title ?? ""), body: String(a.body ?? ""), authorship, provenance: s(a.provenance) }, ctx.now(), ctx.by);
     },
+  },
+  {
+    name: "vault_list",
+    description: "List a folder: its notes and subfolders, as far as the reading rules open it. Closed folders are named with the reason, ignored ones not at all. Empty folder = the vault root.",
+    inputSchema: { type: "object", properties: { folder: str("Folder path from the vault root, e.g. notes/20_COMM or augment_wiki/concept. Empty for the root.") } },
+    async run(a, ctx) { return w.list(ctx.repo, String(a.folder ?? "")); },
+  },
+  {
+    name: "vault_write",
+    description: "Write a whole markdown note, as Tier 2's vault_write does, under the same rules (the plugin's rules/surfaces.md). Creates a new source note at an address the person named, or in the inbox (frontmatter with augment: \"#to-process\" included). Creates or replaces a wiki note only as part of process or mint, which need a script-capable surface for their ledger, so in practice rarely here. Creates or replaces a file under the skills root; a skill's references/ file needs the person's approval and a changelog line. Never replaces an existing source (source_callout, source_set), never writes augment_memory/ (memory tools), never a folder the config closes.",
+    inputSchema: { type: "object", required: ["path", "content"], properties: {
+      path: str("The note's path from the vault root, ending in .md."), content: str("The complete file, frontmatter included."),
+      changelog: str("For a skill's references/ file: the one-line description of the approved rule change, logged in the skill's CHANGELOG.md in the same commit.") } },
+    async run(a, ctx) { return w.write(ctx.repo, { path: String(a.path ?? ""), content: String(a.content ?? ""), changelog: s(a.changelog) }, ctx.now().slice(0, 10), ctx.by); },
+  },
+  {
+    name: "vault_edit",
+    description: "Replace one exact passage in a skill's file under the skills root (a rule change the person approved), so the rest of the file is never regenerated. The passage must occur exactly once. A references/ file takes a changelog line, committed with it. Sources, wiki notes and memory are refused with the route that applies.",
+    inputSchema: { type: "object", required: ["path", "old", "new"], properties: {
+      path: str("The file's path from the vault root."), old: str("The exact passage as it stands now."), new: str("Its replacement."),
+      changelog: str("For a references/ file: one line on the approved change.") } },
+    async run(a, ctx) { return w.edit(ctx.repo, { path: String(a.path ?? ""), old: String(a.old ?? ""), new: String(a.new ?? ""), changelog: s(a.changelog) }, ctx.now().slice(0, 10), ctx.by); },
+  },
+  {
+    name: "source_set",
+    description: "Set one system key of a source note's frontmatter, as source_write.py set does: augment (its state, e.g. #to-process or #excluded), created, updated or assisted_by. The person's own keys and the body are never touched, and the write is refused if it would move the content hash. Filing decisions are the person's: set a state only when they say so.",
+    inputSchema: { type: "object", required: ["path", "key", "value"], properties: {
+      path: str("The source's path from the vault root."), key: { type: "string", enum: ["augment", "created", "updated", "assisted_by"] },
+      value: str("For augment, the tag with its #; dates as YYYY-MM-DD HH:MM.") } },
+    async run(a, ctx) { return w.sourceSet(ctx.repo, { path: String(a.path ?? ""), key: String(a.key ?? ""), value: String(a.value ?? "") }, ctx.by); },
+  },
+  {
+    name: "source_callout",
+    description: "Comment on a source note, as source_write.py callout does (write skill, comment mode): a one-line > [!ai] callout for Claude's own observation, or > [!note] for the person's dictated words, placed after the title or at the head of a named section. Existing text is never altered (checked byte for byte), updated: is stamped, and the ledger entry is parked for the next compaction. Only when the person asks for the comment or confirms it.",
+    inputSchema: { type: "object", required: ["path", "text"], properties: {
+      path: str("The source's path from the vault root."), text: str("The comment, one paragraph on one line."),
+      kind: { type: "string", enum: ["ai", "note"], description: "ai: Claude's observation (default). note: the person's own words." },
+      heading: str("Optional: the exact section heading line (e.g. '## Budget') to comment at; default after the title.") } },
+    async run(a, ctx) { return w.sourceCallout(ctx.repo, { path: String(a.path ?? ""), text: String(a.text ?? ""), kind: s(a.kind), heading: s(a.heading) }, ctx.now(), ctx.by); },
+  },
+  {
+    name: "append_history",
+    description: "Append entries to the ledger, as augment-runner's append_history does. GitHub cannot append to a file, so they are parked as one new file in augment_wiki/history.pending/, which compact_index.py merges into history.jsonl at the next script-capable run. Each entry is an object with a string id.",
+    inputSchema: { type: "object", required: ["entries"], properties: { entries: { type: "array", items: { type: "object" } } } },
+    async run(a, ctx) { return w.appendHistory(ctx.repo, a.entries, ctx.now(), ctx.by); },
   },
 ];
 

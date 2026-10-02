@@ -9,7 +9,7 @@ description: Start a conversation with the augment vault connected and its memor
 
 ## Procedure
 
-**1. Confirm the tier** as `rules/surfaces.md` sets out: `augment-runner` `status`, then `augment_wiki/config.yaml` through the Obsidian MCP. Both must answer. When either fails, name the missing piece and the one step that fixes it, from the gate's list, and stop. A runner absent from a Chat conversation is never fixed by enabling a connector, since the plugin cannot supply it there: the fix is to register it in Desktop's `claude_desktop_config.json`, quit Desktop and open a new conversation.
+**1. Confirm the tier** as `rules/surfaces.md` sets out. With only the remote connector (Chat on the web or the phone), its `activate` tool does steps 1 to 3 at once: call it, and follow the connector's column of the table from then on. Otherwise: `augment-runner` `status`, then `augment_wiki/config.yaml` through the Obsidian MCP. Both must answer. When either fails, name the missing piece and the one step that fixes it, from the gate's list, and stop. A runner absent from a Chat conversation is never fixed by enabling a connector, since the plugin cannot supply it there: the fix is to register it in Desktop's `claude_desktop_config.json`, quit Desktop and open a new conversation.
 
 **2. Check freshness**: `run_script check_freshness`, and `obsidian-git:pull` if it reports behind.
 

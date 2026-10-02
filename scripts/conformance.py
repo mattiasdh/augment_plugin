@@ -559,6 +559,10 @@ def main():
     # wiki, so every finding is an advisory for the sweep, never a failed build.
     from package_skill import check as check_skills
     advisories.extend(check_skills(ROOT))
+    pend = os.path.join(ROOT, "augment_wiki", "history.pending")
+    if os.path.isdir(pend) and any(f.endswith(".jsonl") for f in os.listdir(pend)):
+        advisories.append(f"{sum(f.endswith('.jsonl') for f in os.listdir(pend))} ledger file(s) parked by the connector in "
+                          "augment_wiki/history.pending/: run compact_index.py to merge them into history.jsonl")
 
     for p in wiki_files:
         d = p.split("/")

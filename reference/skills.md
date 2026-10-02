@@ -40,7 +40,8 @@ The thin SKILL.md names its reference files and where to read them:
 
 Feedback that changes a rule is proposed as the exact lines to add, change or remove in the reference file, and applied only on the person's approval.
 - **With the vault on disk**: apply the edit, add the dated line to CHANGELOG.md, run `package_skill.py <vault> <skill>`, and tell the person to upload the new package.
-- **Away from a filesystem**: park it with `memory_offer` (or `memory_write.py offer`), kind `correction`, target the reference file. The sweep applies it with the person.
+- **Through the connector**: `vault_edit` replaces the one passage and logs the `changelog` line in the same commit; the nightly cycle rebuilds the package.
+- **When the person is not there to approve**: park it with `memory_offer` (or `memory_write.py offer`), kind `correction`, target the reference file. The sweep applies it with the person.
 - **Never as a memory card.** Only Claude's own recurring slips in running a skill are memory, as a card scoped to the skill's name.
 
 ## Checks

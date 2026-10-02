@@ -11,7 +11,7 @@ Orchestration rather than a new capability. It reads what the cycle did, audits 
 
 Target about fifteen minutes, and the audit should make it shorter rather than longer. If it regularly runs longer, the system is taking more than it gives, so say so rather than letting it creep.
 
-Confirm the tier before anything else, as `rules/surfaces.md` sets out: trust the session-start line in Code and Cowork, probe once per conversation in Chat, and stop and ask the person to connect when no tier is reachable. In Tier 2 every script call, file operation and git step below goes through that rule's table.
+Confirm the tier before anything else, as `rules/surfaces.md` sets out: trust the session-start line in Code and Cowork, probe once per conversation in Chat, and stop and ask the person to connect when no tier is reachable. Through the remote connector alone, the sweep's decisions can be taken and written (`source_set`, `source_callout`, `vault_edit`, the memory tools), but its reports come from scripts: read the queue as the last script-capable run wrote it (`augment_wiki/verify-queue.md`), say that it may be a day old, and leave the checks to the next run. In Tier 2 every script call, file operation and git step below goes through that rule's table.
 
 Read `reference/scope-and-index.md` and `reference/views-and-hubs.md`, plus `rules/cognition.md` §§4 and 6. This skill compiles nothing, so the sections governing how a note is written are opened only when a specific rule is in question. Where a sweep does hand-write a note, and a sourced-link escalation is the standing case, read `reference/note-shape.md` for that write.
 

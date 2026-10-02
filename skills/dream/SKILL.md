@@ -9,7 +9,7 @@ Scheduled, unattended maintenance. It absorbs what were separately a backlog con
 
 Runs nightly or on demand. It does the machine work; `verify`, weekly, does the human work, and this skill's queue is what that sweep reads.
 
-Confirm the tier before anything else, as `rules/surfaces.md` sets out: trust the session-start line in Code and Cowork, probe once per conversation in Chat, and stop and ask the person to connect when no tier is reachable. In Tier 2 every script call, file operation and git step below goes through that rule's table.
+Confirm the tier before anything else, as `rules/surfaces.md` sets out: trust the session-start line in Code and Cowork, probe once per conversation in Chat, and stop and ask the person to connect when no tier is reachable. Through the remote connector alone (Chat on the web or the phone) this operation cannot run, since it is built from the plugin's scripts: say so in one line and name the surfaces that can, a Claude Code session on the vault (from the Claude app too), Cowork, or Desktop Chat with the runner. In Tier 2 every script call, file operation and git step below goes through that rule's table.
 
 Read `reference/scope-and-index.md`, `reference/statuses.md`, `reference/links.md` and `reference/views-and-hubs.md`, plus all three files in `rules/`. Run the freshness check first.
 
@@ -32,6 +32,8 @@ Deletion is available to neither.
 ## Phases
 
 Run in order. Each phase writes to history as it goes, so an interrupted run resumes from the last completed item rather than from the beginning.
+
+**0. Fold in what the connector wrote.** `compact_index.py <vault>` first: it merges the ledger entries the remote connector parked in `augment_wiki/history.pending/` (comments and appends from the phone) into `history.jsonl` before anything reads the ledger.
 
 **1. Detect changed inputs.** Compare every indexed source's current content hash against the stored one. Declaring or retagging a source is not an edit and must not trigger a rebuild. Where a hash differs, mark every note compiled from that source `#stale`. This runs first because everything downstream depends on knowing what moved.
 
@@ -113,7 +115,7 @@ List them in the applied-writes section like any other unattended write.
 
 **Also in this phase**: near-duplicate detection queued as merge candidates; contradiction detection proposing a tension note; the decay lane, read after phase 7 when the overlay has today's rebuilds in it, queued as removal proposals rather than applied; chronic rebuild, notes recompiling every cycle, queued as split candidates; unstable synthesis, notes whose body changes materially without their sources changing, exempt under a restyle marker; and the counts of undeclared sources and of sources that produced nothing, a rising figure in the latter being evidence the consolidation is not earning its keep.
 
-**7. Regenerate.** The index is already current, so this phase only rebuilds the hubs, views and theme bodies from it: the views first, then each theme's member list from the keyword back-references, then the hubs. All of it is mechanical and overwrites its output wholesale, so a hand edit to a hub, a view or a theme body does not survive. Theme notes are never created or deleted here, since minting and retiring a theme are curation decisions; the script only refills the bodies of themes that exist. A view is written even when empty, so its link never dangles. Last, write the search index the connector and any file-less search read, `gen_search.py <vault>`, so a note's new aliases and today's rebuilds are searchable from the phone by morning.
+**7. Regenerate.** The index is already current, so this phase only rebuilds the hubs, views and theme bodies from it: the views first, then each theme's member list from the keyword back-references, then the hubs. All of it is mechanical and overwrites its output wholesale, so a hand edit to a hub, a view or a theme body does not survive. Theme notes are never created or deleted here, since minting and retiring a theme are curation decisions; the script only refills the bodies of themes that exist. A view is written even when empty, so its link never dangles. Last, write the search index the connector and any file-less search read, `gen_search.py <vault>`, so a note's new aliases and today's rebuilds are searchable from the phone by morning, and rebuild the upload packages of skills kept in the vault, `package_skill.py <vault> --all`, so a rule changed through the connector during the day is in its package by morning (`reference/skills.md`); name any rebuilt package in the report, since the person uploads it.
 
 Then bring the sources' backlink lines into step with the compacted index, so a source that gained, lost or changed a citing note tonight says so in its own frontmatter by morning. This writes into the source layer, and is autonomous only because it is the same class of write as the status tag: frontmatter only, a mirror of the index rather than a judgement, and refused by the script wherever it would move a content hash.
 

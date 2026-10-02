@@ -19,12 +19,45 @@ declaration carries `kind: "scope"`, all three are real state and are kept.
 
 Written atomically (temp file + os.replace) so a crash mid-write cannot leave a
 truncated index. Run from the vault root.
+
+First it merges augment_wiki/history.pending/: ledger entries the remote
+connector wrote, one small file per write, because GitHub cannot append to a
+file. They are appended to history.jsonl in file-name order (each name starts
+with its timestamp) and the merged files are removed: they are transport, not
+records, and every line they carried now stands in the ledger.
 """
 import json, os, sys, tempfile
 
 ROOT = sys.argv[1] if len(sys.argv) > 1 else "."
 HIST = os.path.join(ROOT, "augment_wiki/history.jsonl")
 IDX = os.path.join(ROOT, "augment_wiki/index.jsonl")
+PENDING = os.path.join(ROOT, "augment_wiki/history.pending")
+
+
+def merge_pending():
+    """Append the connector's parked ledger files to history.jsonl, then remove them. Returns the line count."""
+    if not os.path.isdir(PENDING):
+        return 0
+    files = sorted(f for f in os.listdir(PENDING) if f.endswith(".jsonl"))
+    lines = []
+    for f in files:
+        for line in open(os.path.join(PENDING, f), encoding="utf-8"):
+            if line.strip():
+                json.loads(line)          # a torn file stops the merge before anything is written
+                lines.append(line.rstrip("\n") + "\n")
+    if lines:
+        with open(HIST, "rb") as h:
+            h.seek(0, 2)
+            gap = h.tell() and (h.seek(-1, 2) or h.read(1) != b"\n")
+        with open(HIST, "a", encoding="utf-8", newline="\n") as h:
+            if gap:
+                h.write("\n")
+            h.writelines(lines)
+    for f in files:
+        os.remove(os.path.join(PENDING, f))
+    if not os.listdir(PENDING):
+        os.rmdir(PENDING)
+    return len(lines)
 
 
 def is_run_marker(entry):
@@ -46,6 +79,9 @@ def is_retired(entry):
 
 
 def main():
+    merged = merge_pending()
+    if merged:
+        print(f"merged {merged} pending ledger line(s) from the connector into history.jsonl")
     latest = {}          # id -> most recent entry
     order = []           # first-seen order of ids, for a stable index
     seen = set()

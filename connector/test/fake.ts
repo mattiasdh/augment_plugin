@@ -1,4 +1,4 @@
-import type { Head, Repo, RepoFile } from "../src/github";
+import type { Change, Entry, Head, Repo, RepoFile } from "../src/github";
 
 /** An in-memory repository with the same create-only and compare-and-swap rules as GitHub's contents API. */
 export class FakeRepo implements Repo {
@@ -12,7 +12,35 @@ export class FakeRepo implements Repo {
 
   private sha() { return `sha${++this.n}`; }
 
-  async head(): Promise<Head> { return { oid: "abcdef1234567890", date: "2026-09-27T12:00:00Z" }; }
+  /** Moves with every commit, so a stale expectedHead is refused as GitHub refuses it. */
+  headOid = "abcdef1234567890";
+
+  async head(): Promise<Head> { return { oid: this.headOid, date: "2026-09-27T12:00:00Z" }; }
+
+  private bump() { this.headOid = `head${this.n}`; }
+
+  async readExact(path: string): Promise<RepoFile | null> { return this.read(path); }
+
+  async list(dir: string): Promise<Entry[] | null> {
+    const pre = dir ? dir + "/" : "";
+    const out = new Map<string, Entry>();
+    for (const [p, f] of this.files) {
+      if (!p.startsWith(pre)) continue;
+      const rest = p.slice(pre.length);
+      const name = rest.split("/")[0];
+      out.set(name, rest.includes("/") ? { name, path: pre + name, type: "dir", sha: "" } : { name, path: p, type: "file", sha: f.sha });
+    }
+    if (!out.size) return null;
+    return [...out.values()].sort((a, b) => (a.type !== b.type ? (a.type === "dir" ? -1 : 1) : a.name < b.name ? -1 : 1));
+  }
+
+  async commit(changes: Change[], message: string, expectedHead: string): Promise<"ok" | "conflict"> {
+    if (expectedHead !== this.headOid) return "conflict";
+    for (const c of changes) this.files.set(c.path, { sha: this.sha(), text: c.text });
+    this.commits.push(message);
+    this.bump();
+    return "ok";
+  }
 
   async read(path: string): Promise<RepoFile | null> {
     const f = this.files.get(path);
@@ -32,6 +60,7 @@ export class FakeRepo implements Repo {
     if (sha && (!cur || cur.sha !== sha)) return "conflict";
     this.files.set(path, { sha: this.sha(), text });
     this.commits.push(message);
+    this.bump();
     return "ok";
   }
 }
