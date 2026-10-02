@@ -2,6 +2,29 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag. A second release on the same day adds a revision letter: `v2026-09-29 Rev. A` here, `2026.9.29-revA` in `plugin.json`.
 
+## v2026-10-02
+
+### New feature
+
+**Every memory card reaches the session, and the ones a prompt is about are named.** Session start (`memory_context.py`, and the connector's `activate`) now lists every active card, project-scoped first, then global, then cards scoped elsewhere. Scope orders the list and labels the card; it no longer filters. Before this, a card scoped to a client or a skill matched no session at all: a Code session is opened on the vault and Chat names no project, so on 2026-10-02 the socials and fee-table cards had never been loaded. `memory_recall.py`, a new UserPromptSubmit hook, names up to three cards the prompt is about by its rare words in their titles, keywords and summaries, and stays silent on a prompt that matches nothing distinctive. In Chat, `activate` and the connector's instructions ask for the same search before any task that names a tool, a format or a skill. Nobody is asked whether to use memory; the card is applied and named.
+
+**Skills can keep their rules in the vault.** `config.yaml` declares a skills root (`skills: root:`). Each skill there has its own folder: a thin SKILL.md, the `references/` it reads live on every use, a CHANGELOG.md of approved rule changes, and `dist/<skill>.skill`, which the new `package_skill.py` builds for upload deterministically. The root stays out of the wiki's scope. The connector's `vault_read` reads it anyway, so a skill on the phone reads the same rules as one in Code. Feedback that changes a rule is proposed as lines and applied on approval: from Code to the file, from Chat as a `memory_offer` correction that the sweep applies. It is never a memory card. Conformance reports skill-folder problems as advisories. `reference/skills.md` holds the convention.
+
+### Improvement
+
+**The memory writers refuse the shapes that turned a card into a second copy of a skill.**
+- A body over 3,000 characters is refused, in Python and in the connector alike; every legitimate card in the vault is under it.
+- Every card write regenerates `index.md`, from one renderer shared by both writers and pinned by a parity test, so the index never shows a summary the card no longer has.
+- `gen_memory_index.py` flags as UNSTABLE a card edited more than three times in seven days, and `verify` rehomes what keeps moving.
+- `remember` gains a split act: a lesson that carries a fact becomes a method card plus an offer of the fact.
+- Python offers take `--kind` and `--target`, as the connector's do.
+
+**One front door each way.**
+- `answer` runs the memory search beside the vault search when a question is also about how the work was done, under its own heading and never as evidence.
+- `write` owns a rule the person sets for a skill's output, as an approved edit to that skill's reference file; `remember` sends it there.
+- `verify` opens with five lines of what Claude learned that week.
+- The routing tests gain three "keep this" cases: one content, one method, one skill rule. On 2026-10-02 the default model routed all 44 correctly. On the first run, the skill-rule case ("keep that rule for the socials") went to `remember`; `write` now owns a rule set for a skill's output, as an approved edit to that skill's reference file.
+
 ## v2026-09-29 Rev. A
 
 ### New feature

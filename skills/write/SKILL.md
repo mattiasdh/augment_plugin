@@ -1,6 +1,6 @@
 ---
 name: write
-description: Put something into the person's notes, the source layer. Use when the person asks to note something down, capture or store it in their notes, file a memo, record a client's or project's requirement or preference, attach a comment or caveat to an existing source, or record that a wiki note is wrong. Covers capture, comment and correction, three shapes of the same act sharing one set of hard rules. Never writes a wiki note. Not a lesson about how Claude should work next time, a tool's behaviour or a reusable script, which remember records, and not a change to a skill's own rules, which is an approved edit to that skill's references.
+description: Put something into the person's notes, the source layer. Use when the person asks to note something down, capture or store it in their notes, file a memo, record a client's or project's requirement or preference, attach a comment or caveat to an existing source, or record that a wiki note is wrong. Covers capture, comment and correction, three shapes of the same act sharing one set of hard rules, and also a rule the person sets for a skill's output (a brand voice, a word to avoid in posts, a channel convention), proposed as an edit to that skill's reference file in the vault. Never writes a wiki note. Not a lesson about how Claude should work next time, a tool's behaviour or a reusable script, which remember records.
 ---
 
 # Write
@@ -19,7 +19,7 @@ Read `rules/freshness.md` and run the check first. Read `rules/write-flow.md` as
 | A source is not wrong but incomplete: a caveat, a scope boundary, a cross-reference, a question | **comment** |
 | A wiki note is wrong, and the fault is in the synthesis | **correct** |
 | A wiki note is wrong, and the fault is in the source | Neither. The person edits their own source; the changed hash re-queues it. |
-| A skill's rule is wrong or missing: a brand voice, a channel convention, a partner handle, a checklist line | Neither. It is an edit to that skill's reference file under the skills root, proposed as the exact lines and applied only on the person's approval, with a CHANGELOG line (`reference/skills.md`). Those files are a skill's rules rather than sources, so the append-only rule below does not reach them, and the approval does its work. |
+| A skill's rule is wrong or missing: a brand voice, a channel convention, a partner handle, a checklist line | **skill rule**, none of the three. It is an edit to that skill's reference file under the skills root, proposed as the exact lines and applied only on the person's approval, with a CHANGELOG line (`reference/skills.md`). Those files are a skill's rules rather than sources, so the append-only rule below does not reach them, and the approval does its work. |
 
 ## Hard rules, all three modes
 
