@@ -23,6 +23,8 @@ Read `reference/scope-and-index.md` and `reference/views-and-hubs.md`, plus `rul
 
 ## Procedure
 
+**0. Open with what Claude learned this week**, five lines at most, before any decision: the memory cards added or updated since the last sweep (git log on `augment_memory/card/`, one line each from its summary), and the skill reference edits applied (the skills' CHANGELOG lines since then). It keeps memory visible without anyone browsing for it, and a wrong lesson caught here costs one line.
+
 **1. Answer the folders, then declare the sources inside them.** Two decisions in that order, because the second is meaningless until the first is settled.
 
 Folders awaiting a decision are the generated list at the top of the queue: top-level folders no scope rule touches, which is to say nobody has ever been asked about them. Put each to the person with its file count and take an answer, in scope with a default or out of scope. Either answer is written to `config.yaml` and takes the folder off the list for good. **Ask about a new folder the sweep it first appears**, rather than letting it sit as a number in the census, since the whole point of the third state is that "not yet asked" stops being indistinguishable from "already declined". A folder that is scratch rather than knowledge goes to the ignore list and is never counted again.
@@ -35,6 +37,8 @@ Then, within the folders now in scope, the cycle reports how many sources carry 
 
 **2b. Work the memory lane**, from the memory lines in the cycle's report, with `reference/memory.md` read. Each item is a decision the cycle may not take alone:
 
+- **An offer** in `augment_memory/offers/` with `kind: correction` and a `target:` under the skills root: a change to a skill's rules, proposed from Chat. Show the person the lines it changes in that reference file; on approval apply it, add the dated line to the skill's CHANGELOG.md and run `package_skill.py <vault> <skill>`, and tell them to upload the new package (`reference/skills.md`). Remove the offer either way.
+- **An UNSTABLE card**, edited more than three times in a week: what keeps changing is usually content or a skill's rules growing inside a card. Move it where it belongs (the notes, or the skill's references), and cut the card back to the lesson and a pointer.
 - **An offer** in `augment_memory/offers/`: content found while working. Capture it through `write` into `_inbox/` or the address the person names, carrying its `assisted_by:` and its prose in an `[!ai]` callout, or discard it. Either way remove the offer file once decided, which is the one deletion in the memory layer the sweep makes, and only because the content has moved or been refused.
 - **A decay proposal**: archive the card, or keep it because the person says it still holds.
 - **A settled preference**, active and seen three or more times: propose it as a line for the person's standing preferences, which load on every surface, and archive the card once they have added it.

@@ -22,7 +22,7 @@ import json, math, os, sys
 
 import _memory as M
 
-THRESHOLD = 9.0   # one rare word in a title, or two in summaries; a single common hit stays silent
+THRESHOLD = 10.0  # more than one rare word in a title: a single hit, however rare, stays silent
 RELATIVE = 0.4    # and within reach of the best hit, so one strong card does not drag in weak ones
 MOST = 3
 

@@ -182,6 +182,18 @@ describe("vault", () => {
     await expect(vault.read(repo, "augment_wiki/config.yaml")).rejects.toThrow(/markdown/);
   });
 
+  it("reads a skill's files under the declared skills root, though the root is out of the wiki's scope", async () => {
+    const repo = vaultRepo({
+      "notes/ASSETS/skills/aa-socials/SKILL.md": "---\nname: aa-socials\n---\nThin.",
+      "notes/ASSETS/skills/aa-socials/references/VOICE.md": "Voice rules.",
+      "notes/ASSETS/skillset/x.md": "No.",
+    });
+    expect(await vault.read(repo, "notes/ASSETS/skills/aa-socials/references/VOICE.md")).toBe("Voice rules.");
+    expect(await vault.read(repo, "notes/ASSETS/skills/aa-socials/SKILL.md")).toContain("Thin.");
+    await expect(vault.read(repo, "notes/ASSETS/skillset/x.md")).rejects.toThrow(/not ruled on/);
+    expect(vault.skillsRoot({ skills: { root: "../etc" } })).toBe("");
+  });
+
   it("searches wiki titles and in-scope source paths only", async () => {
     const out = await vault.search(vaultRepo(), "pace layering");
     expect(out).toContain("augment_wiki/concept/pace-layering.md");

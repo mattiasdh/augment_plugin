@@ -53,8 +53,10 @@ The memory layer (`reference/memory.md`) has no ledger and no compile step, so t
 |---|---|
 | `memory_write.py` | The one writer of `augment_memory/`: `add` a card, `seen`, `update`, `supersede`, `archive`, or `offer` content for the source layer. Refuses a near-duplicate of an active card, an over-long title or summary, and the common secret shapes. |
 | `memory_search.py` | Ranks cards by the query words in title, keywords, summary and body. RECALL's search. |
-| `gen_memory_index.py` | Rewrites `augment_memory/index.md` and reports defects, merge candidates, decay proposals and waiting offers. DREAM phase 7b. `--check` writes nothing. |
-| `memory_context.py` | The cards a session starts with, project-scoped first, within a character budget. SessionStart hook; ACTIVATE runs it in Chat. Silent outside a vault. |
+| `gen_memory_index.py` | Rewrites `augment_memory/index.md` and reports defects, merge candidates, UNSTABLE cards (more than three edits in a week), decay proposals and waiting offers. DREAM phase 7b. `--check` writes nothing. |
+| `memory_context.py` | Every active card a session starts with: project-scoped first, then global, then cards scoped elsewhere, within a character budget. SessionStart hook; ACTIVATE runs it in Chat. Silent outside a vault. |
+| `memory_recall.py` | Names the few cards a prompt is about, by its rare words in their titles, keywords and summaries. UserPromptSubmit hook; silent when nothing clears the bar. `memory_recall.py <vault> <words>` prints the scores for tuning. |
+| `package_skill.py` | Builds `dist/<skill>.skill` from a skill folder under the declared skills root, deterministically; `--check` reports skill-folder problems (also run by conformance). `reference/skills.md`. |
 
 ## Tier 2
 

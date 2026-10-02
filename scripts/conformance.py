@@ -39,6 +39,10 @@ class firing on every note cannot bury the rest; findings are never collapsed.
     rather than ruled on (VERIFY step 5)
   - aliases (defect when not a list of plain names; advisory when an alias no longer
     appears in the note's sources, and a count of notes still without aliases).
+  - skills (advisory): under the skills root config.yaml declares, a folder with
+    no SKILL.md at its top, a SKILL.md without name and description or named
+    otherwise than its folder, a `references/` file it names that does not exist,
+    and a dist/ package behind its live files (reference/skills.md).
   - run marker (advisory): `verify-queue.md` regenerated today with no `*_run` line
     in `history.jsonl` for today, so a cycle ran and left no trace in the ledger
     (CONTRACT §2)
@@ -551,6 +555,11 @@ def main():
     if missing_aliases:
         advisories.append(f"{missing_aliases} concept and entity notes carry no aliases yet "
                           "(DREAM phase 6 backfills twenty a night)")
+    # skill folders under the declared skills root (reference/skills.md): out of the
+    # wiki, so every finding is an advisory for the sweep, never a failed build.
+    from package_skill import check as check_skills
+    advisories.extend(check_skills(ROOT))
+
     for p in wiki_files:
         d = p.split("/")
         if len(d) == 3 and d[1] in CONTENT_TYPES and p not in entry_ids:
