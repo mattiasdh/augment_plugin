@@ -1,14 +1,14 @@
 /**
- * The vault beyond memory: search, reading, and capture into the inbox.
+ * The vault beyond memory: search, reading, and capture into the inbox (the other writes are in write.ts).
  *
  * What may be read is decided by the vault's own `augment_wiki/config.yaml`, read
  * at request time and never restated here: a source is readable when the scope
  * rules put it in scope (the plugin's `_gen_util.scope_of`, ported) and it does
  * not carry `#excluded`. The wiki and the memory layer are readable whole, since
  * both are written by the system from what scope already allowed. The only write
- * outside `augment_memory/` is a new file in the inbox; nothing existing in the
- * source layer is ever touched, which is what the method requires of a surface
- * that cannot run `source_write.py`.
+ * here is a new file in the inbox; changes to existing files go through write.ts, under the rules of the
+ * plugin's rules/surfaces.md, so the person's text is never rewritten on any surface
+ * (source_write.py is ported for the two writes a source takes).
  */
 import { parse as parseYaml } from "yaml";
 import type { Repo } from "./github";
@@ -38,7 +38,7 @@ export function clearCache() { cache.clear(); }
  * starts at a key in column 0 and runs to the next; a column-0 comment is dropped,
  * which is safe because YAML indents every line of a block scalar.
  */
-const CONFIG_SECTIONS = ["scope", "source_root", "memory", "skills"];
+const CONFIG_SECTIONS = ["scope", "source_root", "memory", "skills", "author"];
 
 export function configSections(text: string, keep = CONFIG_SECTIONS): string {
   const out: string[] = [];

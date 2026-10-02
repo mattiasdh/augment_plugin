@@ -7,7 +7,7 @@ description: Put something into the person's notes, the source layer. Use when t
 
 **Everything the system writes into the person's own layer comes through here, and none of it ever touches prose they wrote.** The wiki is compiled output, so a correction or an observation written there is destroyed by the next build and lives only in a derived file nobody treats as authoritative. Routing it to the source preserves it, attributes it, and improves every future compilation rather than one paragraph.
 
-Confirm the tier before anything else, as `rules/surfaces.md` sets out: trust the session-start line in Code and Cowork, probe once per conversation in Chat, and stop and ask the person to connect when no tier is reachable. In Tier 2 every script call, file operation and git step below goes through that rule's table.
+Confirm the tier before anything else, as `rules/surfaces.md` sets out: trust the session-start line in Code and Cowork, probe once per conversation in Chat, and stop and ask the person to connect when no tier is reachable. Through the remote connector, use its column of the `rules/surfaces.md` table: the same rules, the source writes as `source_set` and `source_callout`. In Tier 2 every script call, file operation and git step below goes through that rule's table.
 
 Read `rules/freshness.md` and run the check first. Read `rules/write-flow.md` as duties before drafting any prose, since this skill writes into a layer whose existing text must never be touched.
 
@@ -80,7 +80,7 @@ A general comment goes at the top of the body after the `# Title` line; a commen
 
 Keep the callout on one line. A paragraph wrapped across several `> ` lines reads as damaged in Obsidian.
 
-Write it with `source_write.py callout`, in either tier. It places the callout, keeps the file's newline convention, refuses anything that would alter existing text and stamps `updated:`. Never insert it by rewriting the file, and never through a note-writing API such as Obsidian's `vault_patch`.
+Write it with `source_write.py callout`, in either tier, or `source_callout` through the connector, which is the same writer ported. It places the callout, keeps the file's newline convention, refuses anything that would alter existing text and stamps `updated:`. Never insert it by rewriting the file, and never through a note-writing API such as Obsidian's `vault_patch`.
 
 **3. The hash drifts, and that is the point.** A callout is body content rather than an excluded metadata line, so the stored hash no longer matches. Mark the wiki notes compiled from this source `#stale` now, with a byte-preserving write, so the queue shows the rebuild immediately rather than waiting for the nightly detect.
 

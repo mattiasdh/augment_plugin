@@ -223,17 +223,6 @@ export class Memory {
     return (await this.repo.readDir(CARD_DIR)).map(toCard);
   }
 
-  /** Regenerate index.md after a card write, so it never shows a summary the card no longer has. */
-  private async reindex(): Promise<void> {
-    const text = renderIndex(await this.cards(), this.settings.index_cap);
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const cur = await this.repo.read(INDEX);
-      if (cur && cur.text === text) return;
-      const r = await this.repo.write(INDEX, text, `MEMORY: index\n\nAssisted-by: ${this.by}`, cur?.sha);
-      if (r === "ok") return;
-    }
-  }
-
   private guard() {
     if (!this.settings.enabled) throw new Refused("memory is disabled in this vault's config.yaml (memory.enabled: false)");
   }
@@ -303,6 +292,7 @@ export class Memory {
     const scope = splitCsv(a.scope);
     const fm: Front = { type: a.type, title: a.title.trim(), summary: a.summary.trim(), status: "active",
       scope: scope.length ? scope : ["global"], keywords: splitCsv(a.keywords), seen: 1, created: now, updated: now, by: this.by };
+    const head = (await this.repo.head()).oid;
     const cards = await this.cards();
     if (!a.distinct) {
       const mine = cardTokens(fm);
@@ -315,9 +305,11 @@ export class Memory {
     }
     const slug = slugify(a.title);
     if (cards.some((c) => c.slug === slug)) throw new Refused(`a card named ${slug} exists already; update it, or choose a title that says what differs`);
-    const r = await this.repo.write(`${CARD_DIR}/${slug}.md`, render(fm, body), `MEMORY: add ${slug}\n\nAssisted-by: ${this.by}`);
-    if (r !== "ok") throw new Refused(`a card named ${slug} appeared meanwhile; search again`);
-    await this.reindex();
+    const text = render(fm, body);
+    const all = [...cards, { slug, sha: "", fm, body } as Card];
+    const r = await this.repo.commit([{ path: `${CARD_DIR}/${slug}.md`, text }, { path: INDEX, text: renderIndex(all, this.settings.index_cap) }],
+      `MEMORY: add ${slug}\n\nAssisted-by: ${this.by}`, head);
+    if (r !== "ok") throw new Refused(`the memory changed while this card was written; search again and retry`);
     return `added ${CARD_DIR}/${slug}.md (${a.type}, ${(fm.scope as string[]).join(", ")})`;
   }
 
@@ -326,12 +318,15 @@ export class Memory {
     checkSlug(slug);
     const path = `${CARD_DIR}/${slug}.md`;
     for (let attempt = 0; attempt < 2; attempt++) {
-      const f = await this.repo.read(path);
-      if (!f) throw new Refused(`no card ${slug}`);
-      const [fm, body] = splitNote(f.text);
-      const [nfm, nbody] = change(fm, body);
-      const r = await this.repo.write(path, render(nfm, nbody), `MEMORY: ${verb} ${slug}\n\nAssisted-by: ${this.by}`, f.sha);
-      if (r === "ok") { await this.reindex(); return; }
+      const head = (await this.repo.head()).oid;
+      const cards = await this.cards();
+      const c = cards.find((x) => x.slug === slug);
+      if (!c) throw new Refused(`no card ${slug}`);
+      const [nfm, nbody] = change(c.fm, c.body);
+      const all = cards.map((x) => (x.slug === slug ? { ...x, fm: nfm, body: nbody } : x));
+      const r = await this.repo.commit([{ path, text: render(nfm, nbody) }, { path: INDEX, text: renderIndex(all, this.settings.index_cap) }],
+        `MEMORY: ${verb} ${slug}\n\nAssisted-by: ${this.by}`, head);
+      if (r === "ok") return;
     }
     throw new Refused(`${slug} kept changing underneath this write; try again`);
   }

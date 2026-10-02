@@ -7,7 +7,7 @@ description: Generate one specific wiki node the person names, a concept, entity
 
 **The top-down counterpart to `process`.** That skill consolidates sources bottom-up and writes whatever notes they yield; this one starts from a node the person knows should exist but that consolidation has not produced, then goes and finds the sources and the relations for it.
 
-Confirm the tier before anything else, as `rules/surfaces.md` sets out: trust the session-start line in Code and Cowork, probe once per conversation in Chat, and stop and ask the person to connect when no tier is reachable. In Tier 2 every script call, file operation and git step below goes through that rule's table.
+Confirm the tier before anything else, as `rules/surfaces.md` sets out: trust the session-start line in Code and Cowork, probe once per conversation in Chat, and stop and ask the person to connect when no tier is reachable. Through the remote connector alone (Chat on the web or the phone) this operation cannot run, since it is built from the plugin's scripts: say so in one line and name the surfaces that can, a Claude Code session on the vault (from the Claude app too), Cowork, or Desktop Chat with the runner. In Tier 2 every script call, file operation and git step below goes through that rule's table.
 
 Read `reference/note-shape.md` and `reference/links.md` before writing, and `rules/write-flow.md` as duties. Run the freshness check first.
 

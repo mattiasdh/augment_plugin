@@ -2,7 +2,7 @@
 
 A remote MCP server that reaches an augment vault through GitHub, for the surfaces that can run neither a shell nor a local MCP server: Claude on the web and the mobile apps. Desktop can use it too, when the Obsidian tier is not running. It runs as a Cloudflare Worker, a small program hosted in your own Cloudflare account, on the free plan.
 
-**It carries the work that suits a phone: asking, remembering and capturing. Compiling stays where the scripts run.**
+**It has the same file primitives and the same rules as Tier 2 (the plugin's `rules/surfaces.md`, Connector column). What it lacks is the script runner, so compiling stays where the scripts run.**
 
 | Tool | Does | Tier 1 and 2 equivalent |
 |---|---|---|
@@ -13,11 +13,18 @@ A remote MCP server that reaches an augment vault through GitHub, for the surfac
 | `vault_search` | Wiki notes by title, aliases, keywords and summary, and sources by path, from `augment_wiki/search.json` (or `index.jsonl` on a vault without it) | `answer`'s index step |
 | `vault_read` | A wiki note, a memory file, a skill's file under the declared skills root, or a source the scope rules allow | reading the file |
 | `capture_note` | A new note in the inbox, create-only, marked `assisted_by:` and `[!ai]` when Claude drafted it | `write` capture |
+| `vault_list` | A folder's notes and subfolders, as far as the reading rules open it; closed folders named with the reason | Obsidian's document map, `ls` |
+| `vault_write` | A whole note: a new source at an address the person named or in the inbox, a wiki note, a skill file. Never replaces an existing source | Tier 2 `vault_write` |
+| `vault_edit` | One exact passage of a skill's file replaced, with its CHANGELOG line, in one commit | `write` skill-rule edit |
+| `source_set` | A source's `augment:`, `created:`, `updated:` or `assisted_by:`, refused if the content hash would move | `source_write.py set` |
+| `source_callout` | A `[!ai]` or `[!note]` comment on a source, existing bytes untouched, `updated:` stamped, ledger entry parked | `source_write.py callout` |
+| `append_history` | Ledger entries, parked in `augment_wiki/history.pending/` for `compact_index.py` to merge | `augment-runner` `append_history` |
 
 What it does not do, by design:
 
-- **No compiling.** `process`, `mint`, `dream` and `verify` need Python, git and the ledger, so they stay in Code, Cowork, Desktop's Tier 2 and the nightly routine.
-- **No write into an existing note.** A comment or correction needs `source_write.py`, which never touches the person's text; the connector parks it with `memory_offer` instead, and the sweep applies it.
+- **No scripts.** `process`, `mint`, `dream` and the sweep's checks are built from the plugin's Python scripts, which a Worker cannot run, so they stay in Code (also from the Claude app, in the cloud), Cowork, Desktop's Tier 2 and the nightly routine.
+- **No rewrite of the person's text**, the same rule every surface keeps: an existing source takes a comment (`source_callout`) or a status (`source_set`), both ports of `source_write.py` held to it by parity tests, and nothing else. No delete or move, and nothing into a folder the config closes.
+- **Every write is one commit**, made against the head it read (GitHub's GraphQL `createCommitOnBranch`), so it never lands on top of a change it did not see. An unsynced edit in Obsidian to the same file meets it at the next pull, as it would from any other surface.
 - **No full-text search of the sources.** The Worker may make 50 outbound calls per request on the free plan, so it searches `search.json` (wiki titles, aliases in the sources' own languages, keywords, one-line summaries, source paths) and reads notes one at a time. A capture whose title matches a note or source already there is still written, and the answer names the likely duplicates.
 - **It reads the last push.** Edits in Obsidian that Obsidian Git has not pushed yet are invisible, and `activate` says which commit was read. A short automatic push interval in Obsidian Git keeps the gap small.
 - **The inbox is not readable**, since the vault's `config.yaml` ignores it. Captures land there and stay there until the sweep files them.

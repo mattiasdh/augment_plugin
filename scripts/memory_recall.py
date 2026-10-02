@@ -22,6 +22,13 @@ import json, math, os, sys
 
 import _memory as M
 
+# Words every vault and tool conversation uses. They still count, at a third, so a
+# card can be confirmed by them, but they cannot carry it alone: "can the connector
+# write files" is about the connector, not about the Coda card's "connector ... write".
+GENERIC = {"connector", "write", "read", "file", "folder", "note", "vault", "memory", "skill",
+           "tool", "script", "plugin", "project", "session", "card", "access", "local", "update",
+           "add", "make", "new", "chat", "code", "claude", "data", "work", "doc", "mcp"}
+
 THRESHOLD = 10.0  # more than one rare word in a title: a single hit, however rare, stays silent
 RELATIVE = 0.4    # and within reach of the best hit, so one strong card does not drag in weak ones
 MOST = 3
@@ -46,7 +53,7 @@ def rank(root, text):
     out = []
     for slug, fm, title, summary in fields:
         s = sum((3 if t in title else 2 if t in summary else 0) * math.log(1 + n / df[t])
-                for t in q if t in df)
+                * (1 / 3 if t in GENERIC else 1) for t in q if t in df)
         if s:
             out.append((round(s, 2), slug, fm))
     out.sort(key=lambda h: (-h[0], h[1]))
