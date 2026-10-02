@@ -11,7 +11,7 @@ Confirm the tier as `rules/surfaces.md` sets out and run the freshness check: a 
 
 ## Procedure
 
-**1. Start from what is already loaded.** In Code and Cowork the session-start context carries the one-line summaries of the cards that apply here, and in Chat `activate` put them there. Often the summary is the whole answer.
+**1. Start from what is already loaded.** In Code and Cowork the session-start context carries a one-line summary of every active card, and the per-prompt hook names the cards the current prompt is about (an `AUGMENT RECALL` line): open those first. In Chat `activate` put the summaries there. Often the summary is the whole answer.
 
 **2. Search when it is not.**
 

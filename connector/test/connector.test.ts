@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
-import { Memory, render, slugify, tokens, jaccard, cardTokens, settingsFrom } from "../src/memory";
+import { Memory, render, renderIndex, slugify, tokens, jaccard, cardTokens, settingsFrom } from "../src/memory";
 import { serve, TOOLS } from "../src/mcp";
 import * as vault from "../src/vault";
 import { CONFIG, FakeRepo, INDEX, SEARCH } from "./fake";
@@ -59,6 +59,19 @@ print(M.render(json.loads(${JSON.stringify(JSON.stringify(single))}), ""), end="
     expect(render(single, "")).toBe(out2);
   });
 
+  it("renders index.md as gen_memory_index.py does", () => {
+    const cards = [
+      { slug: "b-card", sha: "", body: "", fm: { type: "tool", title: "B", summary: "second", status: "active", scope: ["global"], seen: 1, updated: "2026-09-01 10:00" } },
+      { slug: "a-card", sha: "", body: "", fm: { type: "tool", title: "A", summary: "first, réemploi", status: "active", scope: ["200 CCN"], seen: 3, updated: "2026-08-01 10:00" } },
+      { slug: "p-card", sha: "", body: "", fm: { type: "preference", title: "P", summary: "pref", status: "active", scope: ["global"], seen: 1, updated: "2026-09-02 10:00" } },
+      { slug: "old", sha: "", body: "", fm: { type: "tool", title: "O", summary: "gone", status: "superseded", superseded_by: "a-card", scope: ["global"], seen: 1, updated: "2026-09-02 10:00" } },
+    ];
+    const out = python(`import json, sys, _memory as M
+cards = [(c["slug"], c["fm"], c["body"]) for c in json.loads(sys.argv[1] if len(sys.argv) > 1 else ${JSON.stringify(JSON.stringify(cards))})]
+print(json.dumps([M.render_index(cards, 150)[0], M.render_index(cards, 2)[0]]))`);
+    expect(JSON.parse(out!)).toEqual([renderIndex(cards as never, 150), renderIndex(cards as never, 2)]);
+  });
+
   it("decides scope as _gen_util.scope_of does", () => {
     const paths = ["notes/40_LIBRARY/a.md", "notes/40_LIBRARY/private/b.md", "notes/_inbox/c.md", "notes/PERSONAL/d.md",
       "notes/PERSONAL/READING/e.md", "notes/OTHER/f.md", "notes/40_LIBRARYX/g.md"];
@@ -109,15 +122,16 @@ describe("memory", () => {
     await expect(m.seen("../../notes/x")).rejects.toThrow(/not a card slug/);
   });
 
-  it("loads project cards first, then global, and searches", async () => {
+  it("loads project cards first, then global, then cards scoped elsewhere, and searches", async () => {
     await m.add({ type: "tool", title: "Archicad export quirk", summary: "IFC export drops zone names", scope: "bim-template" });
     await m.add({ type: "preference", title: "British spelling", summary: "EN-UK spelling in English deliverables" });
     await m.add({ type: "tool", title: "Unrelated project tool", summary: "only for another repo", scope: "other" });
     const ctx = await m.context("bim-template");
     const lines = ctx.split("\n");
-    expect(lines[0]).toMatch(/2 cards for this session \(1 scoped to bim-template, 1 global\)/);
+    expect(lines[0]).toMatch(/3 cards for this session \(1 scoped to bim-template, 1 global, 1 scoped elsewhere/);
     expect(lines[1]).toContain("[[archicad-export-quirk]]");
-    expect(ctx).not.toContain("unrelated");
+    expect(lines[2]).toContain("[[british-spelling]]");
+    expect(lines[3]).toContain("[[unrelated-project-tool]]");
     expect(await m.search("ifc zone")).toContain("archicad-export-quirk");
   });
 
@@ -126,6 +140,17 @@ describe("memory", () => {
       .toContain("augment_memory/offers/2026-09-27-totem-export-drops-the-bio-based-flag.md");
     const off = new Memory(repo, settingsFrom({ memory: { enabled: false } }), () => NOW, BY);
     await expect(off.add({ type: "tool", title: "x", summary: "y" })).rejects.toThrow(/disabled/);
+  });
+
+  it("refuses a body past the cap and keeps index.md in step with every write", async () => {
+    await expect(m.add({ type: "procedure", title: "Whole skill pasted", summary: "x", body: "a".repeat(3001) })).rejects.toThrow(/3000 at most.*skill's reference/);
+    await m.add({ type: "tool", title: "Coda canvas cells", summary: "Canvas cells via the per-cell URI" });
+    expect(repo.files.get("augment_memory/index.md")!.text).toContain("Canvas cells via the per-cell URI");
+    await m.update("coda-canvas-cells", { summary: "Canvas cells only through the per-cell URI" });
+    const idx = repo.files.get("augment_memory/index.md")!.text;
+    expect(idx).toContain("Canvas cells only through the per-cell URI");
+    expect(idx).not.toContain("Canvas cells via the per-cell URI");
+    await expect(m.update("coda-canvas-cells", { body: "b".repeat(3001) })).rejects.toThrow(/3000 at most/);
   });
 
   it("agrees with its own token measure on a card read back", async () => {
@@ -155,6 +180,18 @@ describe("vault", () => {
     await expect(vault.read(repo, "notes/NEW/z.md")).rejects.toThrow(/not ruled on/);
     await expect(vault.read(repo, "notes/40_LIBRARY/../PERSONAL/d.md")).rejects.toThrow(/not a vault path/);
     await expect(vault.read(repo, "augment_wiki/config.yaml")).rejects.toThrow(/markdown/);
+  });
+
+  it("reads a skill's files under the declared skills root, though the root is out of the wiki's scope", async () => {
+    const repo = vaultRepo({
+      "notes/ASSETS/skills/aa-socials/SKILL.md": "---\nname: aa-socials\n---\nThin.",
+      "notes/ASSETS/skills/aa-socials/references/VOICE.md": "Voice rules.",
+      "notes/ASSETS/skillset/x.md": "No.",
+    });
+    expect(await vault.read(repo, "notes/ASSETS/skills/aa-socials/references/VOICE.md")).toBe("Voice rules.");
+    expect(await vault.read(repo, "notes/ASSETS/skills/aa-socials/SKILL.md")).toContain("Thin.");
+    await expect(vault.read(repo, "notes/ASSETS/skillset/x.md")).rejects.toThrow(/not ruled on/);
+    expect(vault.skillsRoot({ skills: { root: "../etc" } })).toBe("");
   });
 
   it("searches wiki titles and in-scope source paths only", async () => {

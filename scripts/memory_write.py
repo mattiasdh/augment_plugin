@@ -9,7 +9,13 @@
   supersede  the old card points at the one replacing it and stops being active
   archive    no longer loaded or listed; the person's call, taken at the sweep
   offer      content found while working, parked for the source layer, where the
-             sweep moves it through write capture; never a card
+             sweep moves it through write capture; never a card. `--kind comment`
+             or `correction` with `--target <path>` parks a change to an existing
+             note or to a skill's reference file (reference/skills.md)
+
+A body is capped at 3000 characters: past that it is a skill's reference or a
+note wearing a card's frontmatter, and belongs there. Every card write regenerates
+augment_memory/index.md, so the index never shows a summary the card no longer has.
 
 Every write refuses the common secret shapes, and a card with no `--by` is refused,
 because the producer is read from the runtime and never defaulted.
@@ -21,6 +27,7 @@ because the producer is read from the runtime and never defaulted.
     memory_write.py <vault> supersede <old-slug> <new-slug>
     memory_write.py <vault> archive <slug>
     memory_write.py <vault> offer --title "..." --by augment/<runtime> (--body TEXT | --body-file F)
+                    [--kind capture|comment|correction] [--target <path>]
 """
 import argparse, os, sys
 
@@ -65,6 +72,13 @@ def check_secret(*texts):
                  "the secret lives instead, and do not reformat it to get past this check.")
 
 
+def check_body(body):
+    if body is not None and len(body.strip()) > M.BODY_MAX:
+        fail(f"the body is {len(body.strip())} characters; {M.BODY_MAX} at most. A memory this long is a skill's "
+             "reference (notes/<skills root>/<skill>/references, proposed as an edit there) or a note (offer it); "
+             "keep the card to the lesson and a pointer.")
+
+
 def card_path(root, slug):
     return os.path.join(root, M.CARD_DIR, slug + ".md")
 
@@ -81,6 +95,7 @@ def write(p, fm, body):
     os.makedirs(os.path.dirname(p), exist_ok=True)
     with open(p, "w", encoding="utf-8", newline="\n") as f:
         f.write(M.render(fm, body))
+    M.write_index(os.path.dirname(os.path.dirname(os.path.dirname(p))))
 
 
 def split_list(v):
@@ -91,6 +106,7 @@ def cmd_add(root, a):
     body = body_of(a) or ""
     check_fields(a.title, a.summary, a.type)
     check_secret(a.title, a.summary, a.keywords, body)
+    check_body(body)
     fm = {"type": a.type, "title": a.title.strip(), "summary": a.summary.strip(), "status": "active",
           "scope": split_list(a.scope) or ["global"], "keywords": split_list(a.keywords),
           "seen": 1, "created": M.stamp(), "updated": M.stamp(), "by": a.by}
@@ -121,6 +137,7 @@ def cmd_update(root, a):
     new_body = body_of(a)
     check_fields(a.title, a.summary, a.type)
     check_secret(a.title, a.summary, a.keywords, new_body)
+    check_body(new_body)
     for k in ("title", "summary", "type", "by"):
         v = getattr(a, k)
         if v is not None:
@@ -163,7 +180,9 @@ def cmd_offer(root, a):
     if os.path.exists(p):
         fail(f"an offer {slug} exists already")
     os.makedirs(os.path.dirname(p), exist_ok=True)
-    text = (f"---\ntitle: {M.q(a.title.strip())}\noffered: {now}\nassisted_by: {a.by}\n---\n"
+    extra = (f"kind: {a.kind}\n" if a.kind and a.kind != "capture" else "") + \
+            (f"target: {M.q(a.target)}\n" if a.target else "")
+    text = (f"---\ntitle: {M.q(a.title.strip())}\noffered: {now}\n{extra}assisted_by: {a.by}\n---\n"
             f"{body.strip()}\n")
     with open(p, "w", encoding="utf-8", newline="\n") as f:
         f.write(text)
@@ -210,6 +229,8 @@ def main():
     p = sub.add_parser("offer")
     p.add_argument("--title", required=True)
     p.add_argument("--by", required=True)
+    p.add_argument("--kind", choices=("capture", "comment", "correction"), default="capture")
+    p.add_argument("--target")
     body_args(p)
 
     a = ap.parse_args()

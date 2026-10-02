@@ -11,7 +11,7 @@ A remote MCP server that reaches an augment vault through GitHub, for the surfac
 | `memory_add`, `memory_seen`, `memory_update`, `memory_supersede` | Write memory, with the same duplicate, length and secret refusals as `memory_write.py` | `remember` |
 | `memory_offer` | Parks content, a comment or a correction for the weekly sweep | `memory_write.py offer` |
 | `vault_search` | Wiki notes by title, aliases, keywords and summary, and sources by path, from `augment_wiki/search.json` (or `index.jsonl` on a vault without it) | `answer`'s index step |
-| `vault_read` | A wiki note, a memory file, or a source the scope rules allow | reading the file |
+| `vault_read` | A wiki note, a memory file, a skill's file under the declared skills root, or a source the scope rules allow | reading the file |
 | `capture_note` | A new note in the inbox, create-only, marked `assisted_by:` and `[!ai]` when Claude drafted it | `write` capture |
 
 What it does not do, by design:
@@ -24,7 +24,7 @@ What it does not do, by design:
 
 ## What may be read
 
-The vault's own `augment_wiki/config.yaml` decides, read at request time; nothing is hard-coded here. A source is readable when its scope rules put it in scope and it is not `#excluded`, in its frontmatter or in the index. A folder the config ignores, rules out, or has not ruled on stays closed, so a folder added tomorrow is closed until the sweep declares it. The wiki and the memory layer are readable whole, since both are written from what scope already allowed.
+The vault's own `augment_wiki/config.yaml` decides, read at request time; nothing is hard-coded here. A source is readable when its scope rules put it in scope and it is not `#excluded`, in its frontmatter or in the index. A folder the config ignores, rules out, or has not ruled on stays closed, so a folder added tomorrow is closed until the sweep declares it. The wiki and the memory layer are readable whole, since both are written from what scope already allowed. So is the skills root the config declares (`skills: root:`): it is ruled out of the wiki's scope, yet a skill reads its rules there on every use.
 
 ## Security model
 
@@ -200,7 +200,7 @@ Keep a copy of `wrangler.local.toml` somewhere safe: it holds no secrets, but it
 
 ## Cost on the free plan
 
-A tool call is one Worker request and one to three GitHub calls. The free plan allows 100,000 requests a day, so a day of heavy use is well under one percent of it. The Worker keeps the vault's config, index and search index for five minutes per instance, so a change to the scope rules in `config.yaml` reaches it within five minutes of the push, and it reads the memory folder in a single GraphQL request.
+A tool call is one Worker request and one to three GitHub calls. The free plan allows 100,000 requests a day, so a day of heavy use is well under one percent of it. A memory write costs two or three more, since it also regenerates `augment_memory/index.md`. The Worker keeps the vault's config, index and search index for five minutes per instance, so a change to the scope rules in `config.yaml` reaches it within five minutes of the push, and it reads the memory folder in a single GraphQL request.
 
 **CPU.** The free plan allows 10 ms of CPU per request. A warm search takes under 1 ms; the first request after the cache expires parses the config and the search index and measured 7 to 10 ms on a comparable machine. `search.json` arrives already tokenised by `gen_search.py`, and only the three sections of `config.yaml` the connector reads are parsed, both to stay under the limit. If `npx wrangler tail` ever shows error 1102, *Worker exceeded resource limits*, on such a first request, the remedy is the Workers Paid plan (5 USD a month, 30 seconds of CPU per request), not a change to the vault.
 

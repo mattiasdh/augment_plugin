@@ -88,6 +88,19 @@ def source_path(root, sid):
     return os.path.join(root, sid)
 
 
+def skills_root(root, config=None):
+    """The skills root `config.yaml` declares (`skills: root:`), vault-relative, or "".
+
+    A skill's folder there holds its thin SKILL.md and the reference files it reads
+    on every use (reference/skills.md). The root is ruled out of scope like any
+    method folder, so nothing in it is compiled; the declaration is what lets the
+    connector read it anyway and the checks find it, without a hardcoded path.
+    """
+    config = load_config(root) if config is None else config
+    r = str(((config or {}).get("skills") or {}).get("root") or "").strip().strip("/")
+    return "" if not r or any(x in ("..", ".") for x in r.split("/")) else r
+
+
 def undecided_folders(root, config):
     """Top-level folders no scope rule touches at all, as (name, .md count).
 

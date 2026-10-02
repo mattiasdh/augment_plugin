@@ -53,6 +53,10 @@ scope:
       in_scope: false
     - path: "notes/PERSONAL/READING"
       in_scope: true
+    - path: "notes/ASSETS/skills"
+      in_scope: false
+skills:
+  root: notes/ASSETS/skills
 `;
 
 export const SEARCH = JSON.stringify({

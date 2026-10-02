@@ -13,7 +13,7 @@ description: Start a conversation with the augment vault connected and its memor
 
 **2. Check freshness**: `run_script check_freshness`, and `obsidian-git:pull` if it reports behind.
 
-**3. Load the memory**: `run_script memory_context [".", "--project", "<name>"]`, with `--project` when the person names the project the conversation is about, so its cards come first. Keep its output in mind for the rest of the conversation as the hook's line would be in Code.
+**3. Load the memory**: `run_script memory_context [".", "--project", "<name>"]`, with `--project` when the person names the project the conversation is about, so its cards come first. Keep its output in mind for the rest of the conversation as the hook's line would be in Code. Chat has no per-prompt recall hook, so do its work yourself: before a task that names a tool, a file format, a client convention or a skill, search memory for it (`run_script memory_search`, or `memory_search` through the connector), open the cards that match, and name the card in the reply when it changes what you do. Never ask the person whether to use memory; apply it visibly, and the person overrides it in a word.
 
 **4. Report in two lines**: the tier and the commit the vault is at, and how many memory cards were loaded. Then go on with what the person asked, or wait.
 

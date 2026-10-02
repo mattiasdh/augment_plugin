@@ -47,7 +47,7 @@ The body: the fact and its mechanism in a few sentences, or the snippet in a fen
 | `title` | Ten words at most. The file name is the slug of the first title and never follows a later rename. |
 | `summary` | One line of at most 160 characters. It is what the index and the session-start context show, so it must stand alone. |
 | `status` | `active`, `superseded` (with `superseded_by:`), or `archived` |
-| `scope` | `global`, or the project names it applies to: the repository or folder name a session is opened on |
+| `scope` | `global`, or what it applies to: a repository or folder a session is opened on, a client or project, a skill's name. A label and an ordering, never a filter |
 | `seen` | How often the memory was confirmed or relearned. Reinforcement, not a view count. |
 | `by` | `<producer>/<version>`, read from the runtime as `reference/provenance.md` sets out |
 
@@ -63,9 +63,17 @@ The writing rules bind a card's prose as they bind any other: typography from th
 
 ## Lifecycle
 
-Written by `remember` through `memory_write.py`, which refuses a near-duplicate of an active card and points to it instead, so the common case of relearning something is `seen` rather than a second card. Read by `recall` through `memory_search.py`, and at session start in Code and Cowork by `memory_context.py`, or by `activate` where no hook runs.
+Written by `remember` through `memory_write.py` (or the connector's `memory_*` tools, which apply the same rules), which refuses a near-duplicate of an active card and points to it instead, so the common case of relearning something is `seen` rather than a second card. It also refuses a body over 3000 characters, and every write regenerates `index.md`, so the index never lags the cards.
 
-`dream` regenerates the index, merges pairs the index script scores as likely the same (the merge is a supersession, cheap to undo), and reports defects, stale cards and waiting offers. `verify` takes what the cycle may not: moving an offer into the source layer through `write` capture, archiving a card, proposing a settled preference as a line of the person's standing preferences, and a snippet reused often enough as a skill. Nothing is deleted by the system; the person may delete a card file themselves.
+Memory reaches a session three ways, none of which the person has to ask for:
+
+- **At session start**, `memory_context.py` (in Chat, `activate`) lists every active card in one line: those scoped to the project the session is opened on, then global ones, then the rest, until the budget is spent. Scope orders the list and never hides a card, since a session opened on the vault is rarely "in" the client or skill a card names.
+- **On each prompt** in Code and Cowork, `memory_recall.py` names the few cards the prompt is about, by its rare words, so they are opened before the work starts. In Chat, `activate` asks for a memory search before any task that names a tool, a format or a skill.
+- **On request**, `recall` searches with `memory_search.py`.
+
+Whatever steers the work is named in the reply, so the person sees which memory was used and can stop a wrong one.
+
+`dream` regenerates the index, flags as UNSTABLE a card edited more than three times in seven days (a memory that keeps moving is usually content, or a skill's rules growing inside a card), merges pairs the index script scores as likely the same (the merge is a supersession, cheap to undo), and reports defects, stale cards and waiting offers. `verify` takes what the cycle may not: moving an offer into the source layer through `write` capture, archiving a card, proposing a settled preference as a line of the person's standing preferences, and a snippet reused often enough as a skill. Nothing is deleted by the system; the person may delete a card file themselves.
 
 ## How memory relates to the rest
 

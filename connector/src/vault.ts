@@ -38,7 +38,7 @@ export function clearCache() { cache.clear(); }
  * starts at a key in column 0 and runs to the next; a column-0 comment is dropped,
  * which is safe because YAML indents every line of a block scalar.
  */
-const CONFIG_SECTIONS = ["scope", "source_root", "memory"];
+const CONFIG_SECTIONS = ["scope", "source_root", "memory", "skills"];
 
 export function configSections(text: string, keep = CONFIG_SECTIONS): string {
   const out: string[] = [];
@@ -103,10 +103,21 @@ const WHY: Record<string, string> = {
   undecided: "is in a folder the vault's config.yaml has not ruled on yet, and an unruled folder stays closed",
 };
 
+/** The skills root config.yaml declares (`skills: root:`), or "" when none is. */
+export function skillsRoot(config: Config): string {
+  const r = String(((config.skills ?? {}) as { root?: string }).root ?? "").trim().replace(/^\/+|\/+$/g, "");
+  return r && !r.split("/").some((x) => x === ".." || x === ".") ? r : "";
+}
+
 export async function read(repo: Repo, path: string): Promise<string> {
   const p = cleanPath(path);
   if (!p.endsWith(".md")) throw new Refused("only markdown notes are readable through the connector");
-  const system = p.startsWith("augment_wiki/") || p.startsWith("augment_memory/");
+  let system = p.startsWith("augment_wiki/") || p.startsWith("augment_memory/");
+  if (!system) {
+    const root = skillsRoot(await loadConfig(repo));
+    // A skill's own files are method, not knowledge: out of the wiki's scope, yet read on every use of the skill.
+    system = root !== "" && p.startsWith(root + "/");
+  }
   if (!system) {
     const config = await loadConfig(repo);
     const s = scopeOf(p, config);

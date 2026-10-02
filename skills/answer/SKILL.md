@@ -27,6 +27,8 @@ Read `rules/freshness.md` and run the check before retrieving. A clone behind th
 
 **3. Match the depth to the question, and descend into the sources for detail.** The wiki is a point of entry into the sources, not a wall around them. A general question is usually answered from the notes. A detailed one is not: it needs the sources those notes cite, and the other sources in the same context, **including the processed-but-unlinked ones**, meeting notes and how-to files that no concept was extracted from but that still hold the specifics. Reach them through the `sources` view, which lists every source under its project or library context and marks the unlinked ones. An absent wiki note means unprocessed material, not absent material, and the index shows whether the relevant sources are still `#to-process`.
 
+**4. When the question is also about how the work was done**, a format, a convention, a procedure or a tool used before, run the memory search beside the vault search (`memory_search.py <vault> <words>`, or `memory_search` through the connector) and answer that part under its own heading, "How it was done before", naming the cards. Memory is never evidence for the rest of the answer: a card says how to work, a source says what is true, and the two are never blended into one claim.
+
 ## Retrieve mode
 
 Return each hit with its build state visible, so a `#current` note and a `#stale` or `#flagged` one do not look alike. Surface the underlying source alongside the wiki note, since the source is what the person actually wrote and is usually what they want.

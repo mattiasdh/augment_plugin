@@ -128,6 +128,18 @@
         }
       },
       "additionalProperties": false
+    },
+    "skills": {
+      "type": "object",
+      "description": "Skills kept in the vault (reference/skills.md). Optional; without it no skill folder is read through the connector or checked.",
+      "properties": {
+        "root": {
+          "type": "string",
+          "description": "Vault-relative folder holding one folder per skill: its thin SKILL.md, references/ read live, CHANGELOG.md and dist/. Rule the same folder out of scope, so it is never compiled."
+        }
+      },
+      "required": ["root"],
+      "additionalProperties": false
     }
   },
   "additionalProperties": true
