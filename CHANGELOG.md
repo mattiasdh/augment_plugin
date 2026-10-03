@@ -2,6 +2,12 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag. A second release on the same day adds a revision letter: `v2026-09-29 Rev. A` here, `2026.9.29-revA` in `plugin.json`.
 
+## v2026-10-03 Rev. A
+
+### Bug fix
+
+**Conformance's stale-stamp advisory no longer reads a moved file as a changed one, and reads accented file names.** A file moved today is now compared with its version at the old path at midnight, found through git's rename detection, so a pure move is silent while a move with an edit, or a plain edit, still reports. Git had been writing accented paths escaped, so an edited note with an accent in its name never matched the check; it now does.
+
 ## v2026-10-03
 
 ### Bug fix

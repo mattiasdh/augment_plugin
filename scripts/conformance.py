@@ -206,19 +206,35 @@ def main():
     import subprocess
     from hash_source import content_hash_bytes
     try:
-        out = subprocess.run(["git", "log", "--since=midnight", "--format=", "--name-only"],
+        # quotepath off: git otherwise writes a path with an accent as "\303\251..." and it
+        # would never match the file on disk, so accented names escaped the check.
+        out = subprocess.run(["git", "-c", "core.quotepath=false", "log", "--since=midnight",
+                              "--format=", "--name-only"],
                              cwd=ROOT, capture_output=True, text=True, timeout=30).stdout
         touched_today = {ln.strip() for ln in out.splitlines() if ln.strip()}
         base = subprocess.run(["git", "rev-list", "-1", "--before=midnight", "HEAD"],
                               cwd=ROOT, capture_output=True, text=True, timeout=30).stdout.strip()
+        # A file moved today stood at its old path at midnight. Comparing it with the same
+        # path finds nothing there and reads the move as all-new content, so a sweep that
+        # files a note away would flag it as edited today. Git's rename detection gives the
+        # old path to compare against.
+        renamed_from = {}
+        if base:
+            diff = subprocess.run(["git", "-c", "core.quotepath=false", "diff", "-M",
+                                   "--name-status", base, "HEAD"],
+                                  cwd=ROOT, capture_output=True, text=True, timeout=30).stdout
+            for ln in diff.splitlines():
+                parts = ln.split("\t")
+                if len(parts) == 3 and parts[0].startswith("R"):
+                    renamed_from[parts[2]] = parts[1]
     except Exception:
-        touched_today, base = set(), ""
+        touched_today, base, renamed_from = set(), "", {}
 
     def body_changed_today(p_):
         if not base:
             return True
         try:
-            old = subprocess.run(["git", "show", f"{base}:{p_}"], cwd=ROOT,
+            old = subprocess.run(["git", "show", f"{base}:{renamed_from.get(p_, p_)}"], cwd=ROOT,
                                  capture_output=True, timeout=30)
             if old.returncode != 0:
                 return True                   # new today: its body is all new
