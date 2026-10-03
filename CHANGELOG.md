@@ -2,6 +2,12 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag. A second release on the same day adds a revision letter: `v2026-09-29 Rev. A` here, `2026.9.29-revA` in `plugin.json`.
 
+## v2026-10-03
+
+### Bug fix
+
+**`release_check.py` finds the vault from the files it checks, not from where the script sits.** It assumed the plugin lived four folders inside the vault, so every installed copy, and every run through the Tier 2 runner, reported each wikilink as resolving to no file. It now looks above the files, then above the working directory, and with no vault says the wikilinks were not checked.
+
 ## v2026-10-02 Rev. A
 
 ### New feature

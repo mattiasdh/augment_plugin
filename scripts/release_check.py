@@ -29,6 +29,9 @@ callout are skipped for the typography pass: they are metadata about the text
 rather than the text (WRITE_FLOW §0), and a provenance line legitimately carries
 punctuation the body may not.
 
+The vault is found from the files, then from the working directory (`find_vault`);
+with neither, the wikilink check is skipped and says so rather than failing every link.
+
 Usage:
     python3 "${CLAUDE_PLUGIN_ROOT}/scripts/release_check.py" <file> [<file> ...]
 """
@@ -37,8 +40,7 @@ import os
 import re
 import sys
 
-VAULT = os.path.dirname(os.path.dirname(os.path.dirname(
-    os.path.dirname(os.path.abspath(__file__)))))
+MARKERS = (("augment_wiki", "config.yaml"), ("_augment", "config.yaml"))
 
 FOOTNOTE_DEF = re.compile(r"(?m)^\[\^([^\]]+)\]:")
 FOOTNOTE_USE = re.compile(r"\[\^([^\]]+)\](?!:)")
@@ -47,14 +49,37 @@ EM_DASH = re.compile(r"[—]")
 MIDDLE_DOT = re.compile(r"[·•]")
 
 
-def vault_basenames():
+def find_vault(paths):
+    """The vault the files belong to: the nearest directory above the first file
+    that holds a vault marker, else the same search from the working directory.
+
+    The plugin is installed apart from the vault, so where this script sits says
+    nothing about where the vault is. The files being checked do, and so does the
+    working directory a Tier 1 session or the Tier 2 runner runs in (a scratch draft
+    lives in a temp folder, and the working directory finds the vault for it).
+    Returns None when neither does.
+    """
+    starts = [os.path.dirname(os.path.abspath(p)) for p in paths if os.path.exists(p)]
+    for start in starts + [os.getcwd()]:
+        d = start
+        while True:
+            if any(os.path.exists(os.path.join(d, *m)) for m in MARKERS):
+                return d
+            parent = os.path.dirname(d)
+            if parent == d:
+                break
+            d = parent
+    return None
+
+
+def vault_basenames(vault):
     """Every file in the vault, by basename with and without extension.
 
     Obsidian resolves `[[target]]` by basename wherever the file sits, so the
     folder is irrelevant to whether a link works and must be irrelevant here too.
     """
     names = set()
-    for f in glob.glob(os.path.join(VAULT, "**", "*"), recursive=True):
+    for f in glob.glob(os.path.join(vault, "**", "*"), recursive=True):
         if os.path.isfile(f):
             base = os.path.basename(f)
             names.add(base)
@@ -89,7 +114,7 @@ def check(path, names):
     for n in sorted(used - defined):
         findings.append(f"footnote [^{n}] used but never defined")
 
-    for target in sorted({t.strip() for t in WIKILINK.findall(text)}):
+    for target in sorted({t.strip() for t in WIKILINK.findall(text)}) if names is not None else []:
         # `[[source]]` is this vault's Type line on every source note, a
         # convention rather than a link to a file that exists.
         if target == "source":
@@ -111,7 +136,11 @@ def main():
         print(__doc__.strip().splitlines()[-1].strip())
         return 2
 
-    names = vault_basenames()
+    vault = find_vault(sys.argv[1:])
+    names = vault_basenames(vault) if vault else None
+    if names is None:
+        print("RELEASE CHECK: no vault found (no augment_wiki/config.yaml above the file or the "
+              "working directory), so wikilinks were not checked")
     total = 0
     for path in sys.argv[1:]:
         if not os.path.exists(path):
@@ -119,7 +148,7 @@ def main():
             total += 1
             continue
         findings = check(path, names)
-        rel = os.path.relpath(path, VAULT)
+        rel = os.path.relpath(path, vault) if vault and os.path.abspath(path).startswith(vault) else path
         if findings:
             print(f"RELEASE CHECK: {len(findings)} finding(s) in {rel}")
             for f in findings:
