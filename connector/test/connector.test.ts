@@ -279,5 +279,6 @@ describe("mcp", () => {
     expect(r.result.content[0].text).toMatch(/^REFUSED: /);
     const a = await (await serve(post([{ jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "activate", arguments: {} } }]), ctx())).json() as any;
     expect(a[0].result.content[0].text).toMatch(/commit abcdef1/);
+    expect(a[0].result.content[0].text).toContain(`serves ${TOOLS.length} tools: ${TOOLS.map((t) => t.name).join(", ")}.`);
   });
 });

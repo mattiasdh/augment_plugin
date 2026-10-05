@@ -39,7 +39,10 @@ export const TOOLS: Tool[] = [
     async run(a, ctx) {
       const head = await ctx.repo.head();
       const m = await memory(ctx);
-      return `AUGMENT CONNECTOR: vault read at commit ${head.oid.slice(0, 7)} (${head.date}). Reads see the last push to GitHub; edits not yet synced from Obsidian are not visible.\n${await m.context(s(a.project) ?? "")}`;
+      const names = TOOLS.map((t) => t.name);
+      return `AUGMENT CONNECTOR: vault read at commit ${head.oid.slice(0, 7)} (${head.date}). Reads see the last push to GitHub; edits not yet synced from Obsidian are not visible.\n` +
+        `This connector serves ${names.length} tools: ${names.join(", ")}. If any of these is missing from your tool list, claude.ai holds a stale copy of the connector's tools: ask the person to reconnect it (Settings, Connectors) or to switch the missing tools on, and do not substitute another server's tool.\n` +
+        (await m.context(s(a.project) ?? ""));
     },
   },
   {

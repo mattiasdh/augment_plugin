@@ -2,6 +2,12 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag. A second release on the same day adds a revision letter: `v2026-09-29 Rev. A` here, `2026.9.29-revA` in `plugin.json`.
 
+## v2026-10-05
+
+### Improvement
+
+**The connector's `activate` names every tool it serves**, and tells the model what a missing one means: claude.ai keeps the tool list it read when the connector was added, so tools from a later redeploy stay invisible until the connector is reconnected. A chat on a stale list now asks for the reconnect, where on 2026-10-05 it reached for the Obsidian server's `vault_list` instead.
+
 ## v2026-10-03 Rev. A
 
 ### Bug fix
