@@ -58,10 +58,12 @@ def detect():
         why = "Obsidian is running on this machine but the plugin's vault_path setting is empty"
     else:
         why = "this project is not the vault and no vault_path is set"
-    return 0, (f"AUGMENT: no vault reachable in this session ({why}). Work unrelated to the vault proceeds "
-               "normally. Before any vault operation, stop and ask the person to connect: open Claude Code "
-               "on the vault, or set the augment plugin's vault_path (/config) to the vault folder. "
-               "Do not start the operation until a tier is confirmed (rules/surfaces.md).")
+    return 0, (f"AUGMENT: no local vault in this session ({why}). Work unrelated to the vault proceeds "
+               "normally. If the augment connector is connected in this session (its tools include "
+               "activate and vault_read), use it: call its activate tool, then work through the connector's "
+               "column of rules/surfaces.md. Only when it is absent too, stop before any vault operation and "
+               "ask the person to connect: the connector (Settings, Connectors), Claude Code opened on the "
+               "vault, or the augment plugin's vault_path (/config) set to the vault folder.")
 
 
 if __name__ == "__main__":

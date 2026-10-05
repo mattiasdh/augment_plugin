@@ -5,11 +5,11 @@ description: Start a conversation with the augment vault connected and its memor
 
 # Activate
 
-**This is the session-start hook for surfaces that run none.** In Code and Cowork, `detect_tier.py` and `memory_context.py` already ran at session start and their lines are in context; there, activating only repeats them, so say so and stop unless the person wants the memory reloaded. In Chat, nothing ran, and this skill does what the hooks would have done.
+**This is the session-start hook for surfaces that run none, and the way in through the connector.** In Code and Cowork, `detect_tier.py` and `memory_context.py` ran at session start and their lines are in context. When they found a local vault (`AUGMENT TIER 1: …`), activating only repeats them, so say so and stop unless the person wants the memory reloaded. When they found none (`AUGMENT: no local vault …`), do not stop there: the session may still reach the vault through the augment connector, so go to step 1. In Chat, nothing ran, and this skill does what the hooks would have done.
 
 ## Procedure
 
-**1. Confirm the tier** as `rules/surfaces.md` sets out. With only the remote connector (Chat on the web or the phone), its `activate` tool does steps 1 to 3 at once: call it, and follow the connector's column of the table from then on. Otherwise: `augment-runner` `status`, then `augment_wiki/config.yaml` through the Obsidian MCP. Both must answer. When either fails, name the missing piece and the one step that fixes it, from the gate's list, and stop. A runner absent from a Chat conversation is never fixed by enabling a connector, since the plugin cannot supply it there: the fix is to register it in Desktop's `claude_desktop_config.json`, quit Desktop and open a new conversation.
+**1. Confirm the tier** as `rules/surfaces.md` sets out. When no local tier is reachable and the augment connector's tools are in the session (Chat on the web or the phone, or a Code or Cowork session opened away from the vault), its `activate` tool does steps 1 to 3 at once: call it, and follow the connector's column of the table from then on. Otherwise: `augment-runner` `status`, then `augment_wiki/config.yaml` through the Obsidian MCP. Both must answer. When either fails, name the missing piece and the one step that fixes it, from the gate's list, and stop. A runner absent from a Chat conversation is never fixed by enabling a connector, since the plugin cannot supply it there: the fix is to register it in Desktop's `claude_desktop_config.json`, quit Desktop and open a new conversation.
 
 **2. Check freshness**: `run_script check_freshness`, and `obsidian-git:pull` if it reports behind.
 

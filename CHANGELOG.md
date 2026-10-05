@@ -2,6 +2,16 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag. A second release on the same day adds a revision letter: `v2026-09-29 Rev. A` here, `2026.9.29-revA` in `plugin.json`.
 
+## v2026-10-05 Rev. A
+
+### Bug fix
+
+**The connector is a tier.** The tier gate in `rules/surfaces.md` knew only the vault on disk (Tier 1) and Obsidian with the runner (Tier 2). So in a session where the plugin's hooks run, opened away from the vault, "activate" stopped at the hook's "no vault reachable" even with the connector connected and working (2026-10-05).
+- The gate now tries Tier 1, then Tier 2, then the connector, whose `activate` is the probe.
+- The hook's line now reads "no local vault" and names the connector route.
+- `activate` goes on to the connector instead of stopping.
+- The gate fails only when none of the three answers, and its list of fixes names connecting the connector.
+
 ## v2026-10-05
 
 ### Improvement

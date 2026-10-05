@@ -15,12 +15,14 @@
 
 Run it before the first vault operation. How often depends on the surface.
 
-- **Code and Cowork.** A SessionStart hook has already put one line in context: `AUGMENT TIER 1: …` or `AUGMENT: no vault reachable …`. Trust it for the session. A second hook has loaded the memory cards that apply (`reference/memory.md`). Probe again only if a vault call fails.
+- **Code and Cowork.** A SessionStart hook has already put one line in context: `AUGMENT TIER 1: …` or `AUGMENT: no local vault …`. Trust it for the session. The second form means no vault on disk, not no vault: go on to the connector, below. A second hook has loaded the memory cards that apply (`reference/memory.md`). Probe again only if a vault call fails.
 - **Chat.** Hooks do not run there, so the first vault operation in a conversation probes, or the person starts with `activate`, which also loads the memory: call `augment-runner` `status`, then read `augment_wiki/config.yaml` through the Obsidian MCP. Both must succeed. Later operations in the same conversation rely on that result and re-probe only on a failure.
 - **Which tier.** A shell plus the vault on disk is Tier 1, and Tier 1 wins whenever it is available. No shell, with `status` READY and Obsidian answering, is Tier 2.
+- **The connector.** When neither answers and the augment connector's tools are in the session (Chat on the web or the phone, or any session opened away from the vault), its `activate` is the probe: it names the commit it reads and loads the memory. From then on every operation works through the connector's column of the table below. Tier 1 first, then Tier 2, then the connector: a local tier, when there is one, runs the scripts the connector cannot.
 
-**When the gate fails, stop and ask the person to connect.** Say which piece is missing and the one step that fixes it, then wait, and resume only when the person confirms. The missing piece is one of these:
+**When the gate fails, stop and ask the person to connect.** The gate fails only when no tier answers, the connector included. Say which piece is missing and the one step that fixes it, then wait, and resume only when the person confirms. The missing piece is one of these:
 
+- The augment connector is not connected to this conversation: Settings, Connectors in claude.ai, then a new conversation. If it is connected but tools are missing from the list, claude.ai holds a stale copy of its tools: reconnect it.
 - Obsidian is not running, or its Local REST API plugin is off.
 - The Obsidian MCP is not configured in Desktop.
 - `augment-runner` is absent from the conversation. In Chat it is never supplied by the plugin: it must be registered in `claude_desktop_config.json`, then Desktop quit fully and a new conversation opened, since connectors attach when a conversation starts. There is no toggle to enable it otherwise.

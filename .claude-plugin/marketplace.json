@@ -10,7 +10,7 @@
       "name": "augment",
       "source": "./",
       "description": "Maintains an intelligence-augmentation vault: person-authored sources, a model-compiled wiki, and the cycle that keeps the two in step.",
-      "version": "2026.10.5",
+      "version": "2026.10.5-revA",
       "author": {
         "name": "Mattias D'Hooghe"
       },
