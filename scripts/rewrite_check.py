@@ -55,6 +55,8 @@ the threshold.
 import re
 import subprocess
 import sys
+import _cli
+_cli.help_guard()
 
 THRESHOLD = 50  # percent; above this, "rewrite" is the wrong word for the pass
 MIN_LEN = 40    # ignore fragments; they carry no sentence structure to compare

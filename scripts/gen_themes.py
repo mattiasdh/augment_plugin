@@ -14,10 +14,11 @@ just `Keywords` each other and the theme should be retired at VERIFY.
 
 Run from the vault root in DREAM phase 7, before gen_hubs (which lists themes).
 """
+import _cli
 import glob, os, re, sys
 from _gen_util import write_if_changed, split_note, links_in, fm_block, stamp
 
-ROOT = sys.argv[1] if len(sys.argv) > 1 else "."
+ROOT = _cli.vault_arg()
 STAMP = stamp()
 WIKILINK = re.compile(r"\[\[([^\]|]+)")
 

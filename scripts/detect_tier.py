@@ -22,7 +22,9 @@ self-signed certificate is not verified for it.
 
     python3 detect_tier.py [--quiet-unless-vault]
 """
+import _cli
 import os, ssl, sys, urllib.request
+_cli.help_guard()
 
 MARKER = os.path.join("augment_wiki", "config.yaml")
 

@@ -26,9 +26,10 @@ file. They are appended to history.jsonl in file-name order (each name starts
 with its timestamp) and the merged files are removed: they are transport, not
 records, and every line they carried now stands in the ledger.
 """
+import _cli
 import json, os, sys, tempfile
 
-ROOT = sys.argv[1] if len(sys.argv) > 1 else "."
+ROOT = _cli.vault_arg()
 HIST = os.path.join(ROOT, "augment_wiki/history.jsonl")
 IDX = os.path.join(ROOT, "augment_wiki/index.jsonl")
 PENDING = os.path.join(ROOT, "augment_wiki/history.pending")

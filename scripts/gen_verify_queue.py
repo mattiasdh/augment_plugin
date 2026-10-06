@@ -8,13 +8,14 @@ Everything from the marker down is CURATED: the live judgement items DREAM
 reconciles each run (dropping what VERIFY resolved), plus the previous run's
 log. That curated tail is preserved untouched. Run from the vault root.
 """
+import _cli
 import glob, json, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _gen_util import stamp, load_config, scope_of, undecided_folders, display_path, source_path
 from detect_changes import is_source_entry, likely_rename
 from collections import Counter
 
-ROOT = sys.argv[1] if len(sys.argv) > 1 else "."
+ROOT = _cli.vault_arg()
 IDX = os.path.join(ROOT, "augment_wiki/index.jsonl")
 QUEUE = os.path.join(ROOT, "augment_wiki/verify-queue.md")
 MARK = "## Queued for confirmation"

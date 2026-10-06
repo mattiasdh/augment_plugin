@@ -5,11 +5,12 @@ One hub per Type and per Kind, each an alphabetic index (by title, articles
 ignored) of its members, plus hub.md indexing the hubs. Overwrites wholesale.
 Run from the vault root after index compaction (DREAM phase 7).
 """
+import _cli
 import json, os, re, sys
 from collections import defaultdict
 from _gen_util import write_if_changed, fm_block, stamp
 
-ROOT = sys.argv[1] if len(sys.argv) > 1 else "."
+ROOT = _cli.vault_arg()
 IDX = os.path.join(ROOT, "augment_wiki/index.jsonl")
 STAMP = stamp()
 

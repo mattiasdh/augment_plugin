@@ -67,10 +67,12 @@ not confined to it and may raise a pair the ranking buried. Embedding similarity
 would add recall but is model-version-dependent and non-reproducible, so it may
 only ever feed this advisory view, clearly marked, never the sourced graph.
 """
+import _cli
 import datetime, glob, json, math, os, re, sys
 from _gen_util import write_if_changed, read_note, split_note, links_in, fm_block, stamp
 from collections import Counter, defaultdict
 from itertools import combinations
+_cli.help_guard()
 
 _args = [a for a in sys.argv[1:] if not a.startswith("--")]
 ROOT = _args[0] if _args else "."

@@ -28,7 +28,9 @@ of history into `history.pre-*.jsonl` is recognised and not reported.
 
 Exit 0 clean, 1 on an unacknowledged loss, 2 when git is unavailable.
 """
+import _cli
 import collections, json, os, subprocess, sys
+_cli.help_guard()
 
 PATH = "augment_wiki/history.jsonl"
 

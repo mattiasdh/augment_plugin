@@ -18,7 +18,9 @@ nothing clears the bar.
     memory_recall.py --hook                 reads {"prompt": ...} on stdin
     memory_recall.py <vault> <prompt words...>   prints the scores, for tuning
 """
+import _cli
 import json, math, os, sys
+_cli.help_guard()
 
 import _memory as M
 

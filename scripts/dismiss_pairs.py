@@ -26,6 +26,8 @@ pair in the call; a batch of declines sharing one shape shares one note. Pass th
 call more than once where the reasons differ.
 """
 import json, os, sys
+import _cli
+_cli.help_guard()
 
 ROOT = ([a for a in sys.argv[1:] if not a.startswith("--")] or ["."])[0]
 ARGS = sys.argv[1:]

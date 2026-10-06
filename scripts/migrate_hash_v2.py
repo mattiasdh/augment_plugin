@@ -21,7 +21,9 @@ History is appended, never rewritten; run compact_index.py afterwards.
     python3 migrate_hash_v2.py <vault>            # dry run, reports counts
     python3 migrate_hash_v2.py <vault> --apply
 """
+import _cli
 import datetime, hashlib, json, os, re, sys
+_cli.help_guard()
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from hash_source import content_hash as v2
 

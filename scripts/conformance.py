@@ -51,11 +51,12 @@ Link extraction ignores fenced and inline `code` spans, so a note or dashboard t
 documents link syntax in backticks is not misread as asserting the link; the
 `further_sources:` anchor check runs on content notes only, never the dashboards.
 """
+import _cli
 import datetime, glob, json, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _gen_util import split_note, links_in, load_config, scope_of, source_path
 
-ROOT = sys.argv[1] if len(sys.argv) > 1 else "."
+ROOT = _cli.vault_arg()
 IDX = os.path.join(ROOT, "augment_wiki/index.jsonl")
 LINK_TYPES = {"related", "example_of", "contradicts"}   # CONTRACT §7; was five until 2026-09-12
 WIKI_STATUS = {"#current", "#stale", "#flagged", "#contested", "#superseded"}

@@ -25,7 +25,9 @@ would. This is the one canonical implementation; a reimplementation on
 Python's str.splitlines (which also splits on \\r, \\x0b, \\x0c and Unicode
 separators) silently disagrees and raises false staleness.
 """
+import _cli
 import hashlib, re, sys
+_cli.help_guard()
 
 _DECL = re.compile(rb"^(Status|augment|wiki|created|updated|assisted_by):")
 _BOM = b"\xef\xbb\xbf"

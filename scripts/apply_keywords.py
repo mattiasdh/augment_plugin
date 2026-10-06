@@ -47,7 +47,9 @@ Usage:
     python3 apply_keywords.py . --remove a-note::another-note
     python3 apply_keywords.py . --dry-run a::b         # state the writes, change nothing
 """
+import _cli
 import glob, json, os, re, subprocess, sys
+_cli.help_guard()
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _gen_util import split_note, links_in, stamp
 

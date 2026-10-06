@@ -21,6 +21,7 @@ DREAM phase 7 runs it with the other generators.
 
     python3 gen_search.py <vault>
 """
+import _cli
 import json, os, re, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -42,7 +43,7 @@ def first_sentence(body):
 
 
 def main():
-    root = sys.argv[1] if len(sys.argv) > 1 else "."
+    root = _cli.vault_arg()
     idx = [json.loads(l) for l in open(os.path.join(root, "augment_wiki/index.jsonl"), encoding="utf-8") if l.strip()]
     cfg = load_config(root)
     notes, sources = [], []

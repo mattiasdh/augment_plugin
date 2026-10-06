@@ -8,11 +8,12 @@ into the sources, including the processed-but-unlinked ones (meeting notes,
 how-to files) that no concept was extracted from and that a detailed question
 still needs. Generated in DREAM phase 7 from index.jsonl.
 """
+import _cli
 import json, os, sys
 from _gen_util import display_path, write_if_changed, fm_block, stamp, load_config
 from collections import defaultdict
 
-ROOT = sys.argv[1] if len(sys.argv) > 1 else "."
+ROOT = _cli.vault_arg()
 IDX = os.path.join(ROOT, "augment_wiki/index.jsonl")
 STAMP = stamp()
 

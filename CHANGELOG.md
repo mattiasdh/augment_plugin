@@ -2,6 +2,12 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag. A second release on the same day adds a revision letter: `v2026-09-29 Rev. A` here, `2026.9.29-revA` in `plugin.json`.
 
+## v2026-10-06
+
+### Bug fix
+
+**`--help` is help in every script that takes a vault.** The scripts read their first argument as the vault path, so `detect_changes.py --help` failed on `--help/augment_wiki/index.jsonl` and `gen_relations.py --help` regenerated a view as a side effect. A new shared `_cli.py` makes `-h` and `--help` print the script's own docstring and exit before anything is read or written, and a script that takes only a vault now refuses an unknown leading flag instead of treating it as a path.
+
 ## v2026-10-05 Rev. A
 
 ### Bug fix

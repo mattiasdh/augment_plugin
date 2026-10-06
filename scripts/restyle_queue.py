@@ -20,7 +20,9 @@ drift that does not exist.
     restyle_queue.py . status             # dormant is a normal answer, not an error
     restyle_queue.py . close              # retire a finished queue out of the index
 """
+import _cli
 import datetime, json, os, sys
+_cli.help_guard()
 
 TODAY = datetime.date.today().isoformat()
 TYPES = ("concept", "entity", "tension")     # themes are generated, hubs and views too

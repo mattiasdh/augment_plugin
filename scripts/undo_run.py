@@ -25,7 +25,9 @@ This prints those for that decision rather than making it.
 The reverting write is itself recorded, as an ordinary confirmed removal rather than
 an autonomous one, because the person asked for it.
 """
+import _cli
 import json, os, re, subprocess, sys
+_cli.help_guard()
 
 GAINED = re.compile(r"Keyword \[\[([^\]]+)\]\] gained")
 HERE = os.path.dirname(os.path.abspath(__file__))

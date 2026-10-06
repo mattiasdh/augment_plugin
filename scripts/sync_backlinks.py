@@ -22,7 +22,9 @@ reported, since that would be a body edit, which this script must never make.
 
     python3 sync_backlinks.py <vault> [--dry-run]
 """
+import _cli
 import json, os, re, sys
+_cli.help_guard()
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from hash_source import content_hash_bytes
 from _gen_util import source_path

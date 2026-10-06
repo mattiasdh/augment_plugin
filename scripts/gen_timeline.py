@@ -7,10 +7,11 @@ each. Reads the note files because decision lines live in bodies, not the index.
 Always writes the file, even when empty, so `[[timeline]]` never dangles.
 Run from the vault root in DREAM phase 7, after index compaction.
 """
+import _cli
 import json, os, re, sys
 from _gen_util import write_if_changed, fm_block, stamp
 
-ROOT = sys.argv[1] if len(sys.argv) > 1 else "."
+ROOT = _cli.vault_arg()
 IDX = os.path.join(ROOT, "augment_wiki/index.jsonl")
 STAMP = stamp()
 
