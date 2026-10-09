@@ -552,7 +552,8 @@ def main():
     # own sources. A wikilink or non-list is a defect; an alias a source no longer
     # carries (the source changed since) is an advisory; notes still without aliases
     # are counted while DREAM's backfill works through them.
-    from apply_aliases import fold, source_texts
+    from apply_aliases import fold, source_texts, read_checked, is_checked
+    checked_al = read_checked(ROOT)
     missing_aliases = 0
     for e in note_entries:
         if e.get("type") not in ("concept", "entity") or not os.path.exists(os.path.join(ROOT, e["id"])):
@@ -560,7 +561,8 @@ def main():
         fm_, _ = split_note(open(os.path.join(ROOT, e["id"]), encoding="utf-8").read())
         al = fm_.get("aliases")
         if al is None:
-            missing_aliases += 1
+            if not is_checked(checked_al, e):
+                missing_aliases += 1
             continue
         if not isinstance(al, list) or any("[[" in str(x) for x in al):
             findings.append(f"aliases must be a list of plain names: {e['id']}")
@@ -571,7 +573,8 @@ def main():
                 advisories.append(f"alias {x!r} no longer appears in any source of {e['id']}")
     if missing_aliases:
         advisories.append(f"{missing_aliases} concept and entity notes carry no aliases yet "
-                          "(DREAM phase 6 backfills twenty a night)")
+                          "(DREAM phase 6 backfills twenty a night; a note checked and found to have "
+                          "no second name is recorded in aliases_checked.jsonl and not counted)")
     # skill folders under the declared skills root (reference/skills.md): out of the
     # wiki, so every finding is an advisory for the sweep, never a failed build.
     from package_skill import check as check_skills

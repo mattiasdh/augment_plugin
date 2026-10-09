@@ -12,7 +12,7 @@ import _cli
 import glob, json, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _gen_util import stamp, load_config, scope_of, undecided_folders, display_path, source_path
-from detect_changes import is_source_entry, likely_rename
+from detect_changes import is_source_entry, likely_rename, edited_rename
 from collections import Counter
 
 ROOT = _cli.vault_arg()
@@ -76,7 +76,9 @@ def main():
     pending_rename_targets = set()
     for e in idx:
         if is_source_entry(e) and not os.path.exists(source_path(ROOT, e["id"])):
-            t = likely_rename(e["id"], e["hash"], ROOT, cfg, {x["id"] for x in idx})
+            known = {x["id"] for x in idx}
+            t = (likely_rename(e["id"], e["hash"], ROOT, cfg, known)
+                 or edited_rename(e["id"], ROOT, cfg, known))
             if t:
                 pending_rename_targets.add(t)
     backlog_rows = []

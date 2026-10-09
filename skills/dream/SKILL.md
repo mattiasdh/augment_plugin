@@ -105,7 +105,7 @@ Write each tag in one direction, naming the note that gains it, since a keyword 
 
 A pair the cycle rules out, or that the sweep declines, is appended to the dismissal sidecar so it is judged once and never resurfaces. The same file carries the opposite verdict, a declined removal, and the two are read into separate sets, since declining to create an edge and declining to destroy one are opposite answers about one pair and must not cancel.
 
-**Alias backfill**, while conformance reports notes without aliases. Up to twenty concept and entity notes a night, oldest first: read each note's sources for the names they use in their own language and write two to four through the script, which refuses any it cannot find in them. A note whose sources share its title's language and offer no other name gets none, which is an answer, not a gap.
+**Alias backfill**, while conformance reports notes without aliases. Up to twenty concept and entity notes a night: take them from `apply_aliases.py <vault> --next 20`, which lists the oldest-compiled notes with no aliases and no recorded empty answer. Read each note's sources for the names they use in their own language and write two to four through the script, which refuses any it cannot find in them. A note whose sources share its title's language and offer no other name gets none, which is an answer, not a gap: pass it with an empty list in the batch and the script records it in `augment_wiki/aliases_checked.jsonl`, so the next night's list skips it until the note is recompiled.
 
 ```
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/apply_aliases.py" <vault> --from-file <batch.json> --auto --run <run-id> --reason "names the sources use"

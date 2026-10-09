@@ -2,6 +2,12 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag. A second release on the same day adds a revision letter: `v2026-09-29 Rev. A` here, `2026.9.29-revA` in `plugin.json`.
 
+## v2026-10-09
+
+### Bug fix
+
+**A rename that was also edited is reported, and an empty alias answer is remembered.** `detect_changes.py` now reports a missing source as `LIKELY RENAME (edited)` when exactly one unindexed file under its scope path keeps at least 80% of its lines, read from git, and anything ambiguous stays `MISSING`; the exact-hash test could not see a file renamed with lines added. The alias backfill left no mark on a note whose sources offer no second name, so the same notes headed the oldest-first order every night: an empty answer is now recorded in `augment_wiki/aliases_checked.jsonl`, `apply_aliases.py --next` lists the notes still to read, and conformance no longer counts a recorded note until it is recompiled.
+
 ## v2026-10-06
 
 ### Bug fix

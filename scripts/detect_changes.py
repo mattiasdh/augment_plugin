@@ -16,7 +16,10 @@ A missing source whose hash matches a current file elsewhere under its own
 scope path is reported `LIKELY RENAME`, not bare `MISSING`, so a sweep does
 not have to re-derive the same glob-and-hash check by hand every time a
 folder gets reorganised. This never resolves the rename; recording one stays
-VERIFY's call (§9), never a guess. It only saves the hand check, and only
+VERIFY's call (§9), never a guess. A rename that was also edited has no exact
+hash to match, so a single unindexed file under the scope path that keeps at
+least 80% of the old file's lines (read from git) is reported `LIKELY RENAME
+(edited)`, under the same rule that anything ambiguous stays `MISSING`. It only saves the hand check, and only
 where the match is unambiguous: exactly one same-basename candidate with the
 matching hash, or, when no file keeps the basename, exactly one unindexed file
 under the scope path carrying the hash (a move that also renamed, found
@@ -36,7 +39,7 @@ line per drift and per missing file, then a summary line the cycle reads.
 Run from the vault root; the argument `.` is the vault root.
 """
 import _cli
-import glob, json, os, sys
+import glob, json, os, subprocess, sys
 import yaml
 from hash_source import content_hash
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -97,6 +100,63 @@ def likely_rename(missing_id, missing_hash, root, config, indexed=None):
     return None
 
 
+EDITED_OVERLAP = 0.8
+
+
+def _last_text(missing_id, root):
+    """The missing source's last committed text, or None. The file is gone from the
+    working tree, so git is the only place its lines survive."""
+    try:
+        sha = subprocess.run(["git", "log", "-1", "--format=%H", "--", missing_id],
+                             cwd=root, capture_output=True, text=True, timeout=30).stdout.strip()
+        if not sha:
+            return None
+        out = subprocess.run(["git", "show", f"{sha}:{missing_id}"], cwd=root,
+                             capture_output=True, text=True, timeout=30)
+        if out.returncode != 0:
+            out = subprocess.run(["git", "show", f"{sha}^:{missing_id}"], cwd=root,
+                                 capture_output=True, text=True, timeout=30)
+        return out.stdout if out.returncode == 0 else None
+    except Exception:
+        return None
+
+
+def _lines(text):
+    return {ln.strip() for ln in text.splitlines() if ln.strip() and ln.strip() != "---"}
+
+
+def edited_rename(missing_id, root, config, indexed=None):
+    """The single unindexed file under the scope path that keeps at least 80% of the
+    missing source's lines, for a rename that was also edited (the exact-hash test in
+    `likely_rename` cannot see it). None where there is no such file, more than one,
+    or the old text is not in git. Like the exact test, this only saves the hand
+    check; recording the rename stays the sweep's call.
+
+    Overlap is measured against the old file's lines, so lines added in the new
+    version do not count against it; frontmatter lines are included on both sides,
+    which only makes a metadata-only edit look more alike."""
+    old = _last_text(missing_id, root)
+    if not old:
+        return None
+    a = _lines(old)
+    if len(a) < 5:
+        return None
+    known = indexed or set()
+    search = os.path.join(root, scope_root(missing_id, config))
+    hits = []
+    for p in glob.glob(os.path.join(search, "**", "*.md"), recursive=True):
+        rel = os.path.relpath(p, root)
+        if not os.path.isfile(p) or rel in known or rel == missing_id:
+            continue
+        try:
+            b = _lines(open(p, encoding="utf-8", errors="replace").read())
+        except OSError:
+            continue
+        if len(a & b) / len(a) >= EDITED_OVERLAP:
+            hits.append(rel)
+    return hits[0] if len(hits) == 1 else None
+
+
 def main():
     idx = [json.loads(l) for l in open(IDX, encoding="utf-8") if l.strip()]
     src_entries = [e for e in idx if is_source_entry(e)]
@@ -119,8 +179,12 @@ def main():
     for e in missing:
         renamed_to = likely_rename(e["id"], e["hash"], ROOT, config,
                                    {x["id"] for x in idx})
+        edited_to = None if renamed_to else edited_rename(
+            e["id"], ROOT, config, {x["id"] for x in idx})
         if renamed_to:
             print(f"LIKELY RENAME -> {renamed_to}  {e['id']}")
+        elif edited_to:
+            print(f"LIKELY RENAME (edited) -> {edited_to}  {e['id']}")
         else:
             print(f"MISSING  {e['id']}")
     print(f"changed-inputs: {len(drift)} drift, {len(missing)} missing, "

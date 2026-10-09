@@ -23,6 +23,14 @@ nightly cycle's unattended backfill, so `undo_run.py` can lift a night back out)
     python3 apply_aliases.py <vault> --from-file batch.json --reason "..." [--auto --run <id>]
             (batch.json maps slug to a list of aliases)
     python3 apply_aliases.py <vault> <slug> ... --dry-run   # check and state, write nothing
+    python3 apply_aliases.py <vault> --next [N]             # the N notes the backfill should read next
+
+**An empty answer is recorded.** A note whose sources share its title's language and
+offer no other name gets no aliases, which is an answer, not a gap. Passing it an
+empty list (or no aliases) writes one line to `augment_wiki/aliases_checked.jsonl`
+beside the note's compile date, so the backfill stops re-reading it: `--next` and
+conformance's count skip a recorded note until it is recompiled, since a changed
+source may offer a name the old one did not.
 """
 import argparse, json, os, re, subprocess, sys, unicodedata
 
@@ -31,6 +39,53 @@ from _gen_util import split_note, stamp, source_path
 from apply_keywords import ledger_entry, locate, bump_stamp, keywords_span
 
 MAX_ALIASES, MAX_LEN = 4, 60
+CHECKED = "augment_wiki/aliases_checked.jsonl"
+
+
+def read_checked(root):
+    """{note id: compile date it was checked at}, from the append-only sidecar."""
+    out = {}
+    p = os.path.join(root, CHECKED)
+    if os.path.exists(p):
+        for line in open(p, encoding="utf-8"):
+            if line.strip():
+                d = json.loads(line)
+                out[d["id"]] = d.get("compiled")
+    return out
+
+
+def is_checked(checked, entry):
+    """True while the note's compile date is the one its empty answer was given at."""
+    return entry["id"] in checked and checked[entry["id"]] == entry.get("compiled")
+
+
+def mark_checked(root, rel, compiled, date, reason):
+    with open(os.path.join(root, CHECKED), "a", encoding="utf-8") as f:
+        f.write(json.dumps({"id": rel, "compiled": compiled, "checked": date,
+                            "note": reason or "no name beyond the title in the sources"},
+                           ensure_ascii=False) + "\n")
+
+
+def next_candidates(root, n):
+    """The n oldest-compiled concept and entity notes with no aliases and no recorded
+    empty answer."""
+    checked = read_checked(root)
+    rows = []
+    for line in open(os.path.join(root, "augment_wiki/index.jsonl"), encoding="utf-8"):
+        if not line.strip():
+            continue
+        e = json.loads(line)
+        if e.get("type") not in ("concept", "entity") or not e["id"].startswith("augment_wiki/"):
+            continue
+        path = os.path.join(root, e["id"])
+        if not os.path.exists(path) or is_checked(checked, e):
+            continue
+        fm, _ = split_note(open(path, encoding="utf-8").read())
+        if fm.get("aliases"):
+            continue
+        rows.append((str(e.get("compiled") or ""), e["id"]))
+    rows.sort()
+    return [r[1] for r in rows[:n]]
 
 
 def fold(text):
@@ -132,8 +187,13 @@ def main():
     ap.add_argument("--auto", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--date", default=None)
+    ap.add_argument("--next", nargs="?", const=20, type=int, metavar="N")
     a = ap.parse_args()
     root = a.vault
+    if a.next is not None:
+        for rel in next_candidates(root, a.next):
+            print(rel)
+        sys.exit(0)
     if a.auto and not a.reason:
         sys.exit("error: --auto requires --reason, since an unattended write with no recorded reason cannot be audited")
     if a.from_file:
@@ -169,6 +229,11 @@ def main():
             print(f"{slug}: aliases {', '.join(aliases) if aliases else 'removed'}")
         else:
             print(f"{slug}: aliases already as given")
+    for slug, (path, aliases) in checked.items():
+        if not aliases:
+            rel = os.path.relpath(path, root).replace(os.sep, "/")
+            mark_checked(root, rel, index_entry(root, rel).get("compiled"), date, a.reason)
+            print(f"{slug}: recorded as checked, no second name")
     if changed and a.reason:
         hist = os.path.join(root, "augment_wiki/history.jsonl")
         with open(hist, "a", encoding="utf-8") as f:
