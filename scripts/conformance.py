@@ -166,6 +166,21 @@ def source_files(config):
         out.append(r)
     return out
 
+def human_release(version):
+    """The release in the form the CHANGELOG and config.yaml use ("v2026-10-09",
+    "v2026-09-29 Rev. A"), from the dotted form plugin.json carries ("2026.10.9",
+    "2026.9.29-revA"). plugin.json may hold only the keys the SDK knows, so the
+    human form is derived rather than stored there. A string already in the
+    human form is returned as it is; anything else gives ""."""
+    v = str(version).strip()
+    m = re.fullmatch(r"(\d{4})\.(\d{1,2})\.(\d{1,2})(?:-rev([A-Za-z]))?", v)
+    if m:
+        y, mo, d, rev = m.groups()
+        return f"v{y}-{int(mo):02d}-{int(d):02d}" + (f" Rev. {rev.upper()}" if rev else "")
+    m = re.fullmatch(r"v(\d{4})-(\d{2})-(\d{2})(?: Rev\. ([A-Z]))?", v)
+    return v if m else ""
+
+
 def main():
     idx = [json.loads(l) for l in open(IDX, encoding="utf-8") if l.strip()]
     cfg = load_config(ROOT)
@@ -737,9 +752,10 @@ def main():
         manifest = json.load(open(os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             "..", ".claude-plugin", "plugin.json"), encoding="utf-8"))
-        installed = str(manifest.get("metadata", {}).get("release", "")).strip()
+        installed = human_release(manifest.get("version", ""))
     except Exception:
         installed = ""
+    declared = human_release(declared) or declared
     if declared and installed and declared != installed:
         advisories.append(
             f"release drift: config.yaml declares {declared}, the installed plugin "
