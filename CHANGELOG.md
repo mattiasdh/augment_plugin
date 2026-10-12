@@ -2,6 +2,12 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag. A second release on the same day adds a revision letter: `v2026-09-29 Rev. A` here, `2026.9.29-revA` in `plugin.json`.
 
+## v2026-10-12
+
+### Bug fix
+
+**`plugin.json` carries only keys the SDK knows.** Claude Code reported `Plugin 'augment' has unrecognized key in plugin.json: 'metadata'` on every load and stripped the key. The `metadata` block held the human form of the release (`v2026-10-09`) and the note on dated versioning, which conformance read for its release-drift advisory. The block is gone; conformance now derives the human form from `version` (`2026.10.12` is `v2026-10-12`, `2026.9.29-revA` is `v2026-09-29 Rev. A`) and accepts either form in `config.yaml`'s `plugin_version`, so a vault that declares `v2026-10-09` keeps working. The versioning rule is the one stated at the top of this file.
+
 ## v2026-10-09
 
 ### Bug fix
