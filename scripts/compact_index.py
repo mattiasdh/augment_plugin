@@ -25,6 +25,13 @@ connector wrote, one small file per write, because GitHub cannot append to a
 file. They are appended to history.jsonl in file-name order (each name starts
 with its timestamp) and the merged files are removed: they are transport, not
 records, and every line they carried now stands in the ledger.
+
+Usage is the second ledger. augment_wiki/usage.pending/, written by
+`usage_log.py` and the connector, is merged the same way into the append-only
+augment_wiki/usage.jsonl, and each wiki note's index entry is given a `used`
+field, `{"opens", "cites", "last_opened", "last_cited"}`, recomputed from that
+ledger on every run and absent when the note was never used. A reader therefore
+never writes the index; it drops a file, and this script projects it.
 """
 import _cli
 import json, os, sys, tempfile
@@ -33,32 +40,58 @@ ROOT = _cli.vault_arg()
 HIST = os.path.join(ROOT, "augment_wiki/history.jsonl")
 IDX = os.path.join(ROOT, "augment_wiki/index.jsonl")
 PENDING = os.path.join(ROOT, "augment_wiki/history.pending")
+USAGE = os.path.join(ROOT, "augment_wiki/usage.jsonl")
+USAGE_PENDING = os.path.join(ROOT, "augment_wiki/usage.pending")
 
 
-def merge_pending():
-    """Append the connector's parked ledger files to history.jsonl, then remove them. Returns the line count."""
-    if not os.path.isdir(PENDING):
+def merge_pending(pending=PENDING, target=HIST):
+    """Append the parked files in `pending` to `target`, then remove them. Returns the line count."""
+    if not os.path.isdir(pending):
         return 0
-    files = sorted(f for f in os.listdir(PENDING) if f.endswith(".jsonl"))
+    files = sorted(f for f in os.listdir(pending) if f.endswith(".jsonl"))
     lines = []
     for f in files:
-        for line in open(os.path.join(PENDING, f), encoding="utf-8"):
+        for line in open(os.path.join(pending, f), encoding="utf-8"):
             if line.strip():
                 json.loads(line)          # a torn file stops the merge before anything is written
                 lines.append(line.rstrip("\n") + "\n")
     if lines:
-        with open(HIST, "rb") as h:
-            h.seek(0, 2)
-            gap = h.tell() and (h.seek(-1, 2) or h.read(1) != b"\n")
-        with open(HIST, "a", encoding="utf-8", newline="\n") as h:
+        gap = False
+        if os.path.exists(target):
+            with open(target, "rb") as h:
+                h.seek(0, 2)
+                gap = h.tell() and (h.seek(-1, 2) or h.read(1) != b"\n")
+        with open(target, "a", encoding="utf-8", newline="\n") as h:
             if gap:
                 h.write("\n")
             h.writelines(lines)
     for f in files:
-        os.remove(os.path.join(PENDING, f))
-    if not os.listdir(PENDING):
-        os.rmdir(PENDING)
+        os.remove(os.path.join(pending, f))
+    if not os.listdir(pending):
+        os.rmdir(pending)
     return len(lines)
+
+
+def usage_by_id(path=USAGE):
+    """{id: {"opens", "cites", "applies", "last_opened", "last_cited", "last_applied"}} from the usage ledger."""
+    out = {}
+    if not os.path.exists(path):
+        return out
+    for line in open(path, encoding="utf-8"):
+        try:
+            d = json.loads(line)
+        except ValueError:
+            continue
+        kind, i, at = d.get("kind"), d.get("id"), str(d.get("at", ""))
+        if not i or kind not in ("open", "cite", "apply"):
+            continue
+        u = out.setdefault(i, {})
+        n, last = {"open": ("opens", "last_opened"), "cite": ("cites", "last_cited"),
+                   "apply": ("applies", "last_applied")}[kind]
+        u[n] = u.get(n, 0) + 1
+        if at > u.get(last, ""):
+            u[last] = at
+    return out
 
 
 def is_run_marker(entry):
@@ -83,6 +116,10 @@ def main():
     merged = merge_pending()
     if merged:
         print(f"merged {merged} pending ledger line(s) from the connector into history.jsonl")
+    used_merged = merge_pending(USAGE_PENDING, USAGE)
+    if used_merged:
+        print(f"merged {used_merged} usage line(s) into usage.jsonl")
+    usage = usage_by_id()
     latest = {}          # id -> most recent entry
     order = []           # first-seen order of ids, for a stable index
     seen = set()
@@ -111,7 +148,11 @@ def main():
     try:
         with os.fdopen(tmp_fd, "w", encoding="utf-8") as out:
             for i in order:
-                out.write(json.dumps(latest[i], ensure_ascii=False) + "\n")
+                e = dict(latest[i])
+                e.pop("used", None)          # usage is projected here only, never carried from a ledger line
+                if i in usage and i.startswith("augment_wiki/"):
+                    e["used"] = usage[i]
+                out.write(json.dumps(e, ensure_ascii=False) + "\n")
         os.replace(tmp_path, IDX)
     except BaseException:
         if os.path.exists(tmp_path):

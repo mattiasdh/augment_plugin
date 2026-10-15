@@ -43,6 +43,25 @@ SECRET = [
 ]
 
 
+def last_used(root):
+    """{card slug: date of its latest open or apply} from augment_wiki/usage.jsonl (usage_log.py)."""
+    out = {}
+    p = os.path.join(root, "augment_wiki", "usage.jsonl")
+    if not os.path.exists(p):
+        return out
+    for line in open(p, encoding="utf-8"):
+        try:
+            d = json.loads(line)
+        except ValueError:
+            continue
+        i = str(d.get("id", ""))
+        if i.startswith(CARD_DIR.replace(os.sep, "/") + "/") and d.get("kind") in ("open", "apply"):
+            slug, at = os.path.basename(i)[:-3], str(d.get("at", ""))[:10]
+            if at > out.get(slug, ""):
+                out[slug] = at
+    return out
+
+
 def settings(root):
     """The `memory:` block of config.yaml over the defaults. Absent means defaults."""
     m = (load_config(root).get("memory") or {})

@@ -19,7 +19,7 @@ description: Start a conversation with the augment vault connected and its memor
 
 ## Off the record
 
-When the person asks to deactivate, pause memory or go off the record, write nothing through `remember` and offer nothing to the source layer for the rest of the conversation, and confirm it in one line. Retrieval stays available. It ends with the conversation; there is no stored switch, because a switch nobody remembers to turn back on silently stops memory for good.
+When the person asks to deactivate, pause memory or go off the record, write nothing through `remember` and offer nothing to the source layer for the rest of the conversation, and confirm it in one line. Usage stops too: in Code and Cowork run `usage_log.py <vault> --off`, which drops what has gathered since the last flush and records nothing more until the session ends; through the connector, call no `usage_cite` (its reads are still counted, without content, and the reply says so). Retrieval stays available. It ends with the conversation; there is no stored switch, because a switch nobody remembers to turn back on silently stops memory for good.
 
 ## Never
 

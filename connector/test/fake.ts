@@ -116,3 +116,14 @@ export const INDEX = [
   { id: "notes/40_LIBRARY/Old name.md", status: "renamed", renamed_to: "notes/40_LIBRARY/New name.md" },
   { id: "notes/PERSONAL/Diary pace.md", status: "processed" },
 ].map((e) => JSON.stringify(e)).join("\n") + "\n";
+
+/** An in-memory stand-in for the Workers KV the usage buffer uses. */
+export class FakeKV {
+  data = new Map<string, string>();
+  async put(key: string, value: string) { this.data.set(key, value); }
+  async get(key: string) { return this.data.get(key) ?? null; }
+  async delete(key: string) { this.data.delete(key); }
+  async list(opts: { prefix: string }) {
+    return { keys: [...this.data.keys()].filter((k) => k.startsWith(opts.prefix)).sort().map((name) => ({ name })), list_complete: true };
+  }
+}

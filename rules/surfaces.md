@@ -51,7 +51,10 @@ The remote connector (`connector/`, for Chat on the web and the phone) is the th
 | `git commit` + `git push` | `command_execute` `obsidian-git:commit-and-sync` | Not needed: every write is one commit, made against the head it read. |
 | `git fetch` + compare (freshness) | `run_script check_freshness` (it fetches locally, and never pulls) | Not needed; edits not yet synced from Obsidian are not visible, and `activate` says so. |
 | Write, confirm or supersede a memory card | `run_script memory_write [".", "add", …]`, never `vault_write` into `augment_memory/` | `memory_add`, `memory_seen`, `memory_update`, `memory_supersede`, never `vault_write` into `augment_memory/` |
+| Record usage (which notes were opened, cited, applied) | Opens are not visible to the plugin through Obsidian's MCP; citations through `run_script usage_log [".", "--kind", "cite", "--op", "answer", slugs…]`, then `run_script usage_log [".", "--flush", "--end"]` before `obsidian-git:commit-and-sync` | Opens recorded by `vault_read` and `memory_get` themselves; citations and applied cards through `usage_cite` |
 | Search memory, load it at the start of a conversation | `run_script memory_search [".", words…]`; `run_script memory_context [".", "--project", name]` | `memory_search`; `activate` |
+
+**Usage is the one write a read-only operation makes, on every surface.** In Tier 1 a hook records each wiki note and memory card read, and the Stop and SessionEnd hooks commit them as one `USAGE:` commit touching only `augment_wiki/usage.pending/`; the skills add what they cited or applied. Nothing in a note, a card or the index is written by it.
 
 **Never do these in Tier 2 or through the connector.** The connector refuses each in code; in Tier 2 they rest on this rule.
 

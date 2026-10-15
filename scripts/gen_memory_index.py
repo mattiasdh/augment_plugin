@@ -16,7 +16,8 @@ The same pass reports for DREAM's queue, one line each:
   UNSTABLE       an active card edited more than three times in the last seven
                  days (git history): a memory that keeps moving is usually content
                  or a skill's rules growing inside a card, for the sweep to rehome.
-  DECAY          an active card seen once and untouched for `memory.decay_days`:
+  DECAY          an active card seen once, untouched and unused (augment_wiki/usage.jsonl)
+                 for `memory.decay_days`:
                  an archive proposal for the sweep, never archived here.
   OFFER          content waiting in augment_memory/offers/ for the sweep to move
                  into the source layer.
@@ -88,8 +89,9 @@ def main():
                 report.append(f"LIKELY SAME  {x} :: {y} ({j:.2f})")
 
     horizon = (datetime.date.today() - datetime.timedelta(days=int(cfg["decay_days"]))).isoformat()
+    used = M.last_used(root)     # a card opened or applied since the horizon is in use, however rarely confirmed
     for slug, fm, _ in active:
-        if M.seen_of(fm) <= 1 and str(fm.get("updated", ""))[:10] < horizon:
+        if M.seen_of(fm) <= 1 and str(fm.get("updated", ""))[:10] < horizon and used.get(slug, "") < horizon:
             report.append(f"DECAY        {slug}: seen once, untouched since {str(fm.get('updated'))[:10]}")
 
     edits = recent_edits(root)

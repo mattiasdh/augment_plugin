@@ -27,6 +27,8 @@ A source `id` is the full vault-relative path, not the bare basename, because re
 
 A wiki entry's `type` equals the subfolder it sits in, so a mismatch is visible from the index alone. Its `kind`, `title` and `status` are duplicated from the note so the hubs can be rebuilt from the index without opening every note. **That duplication is deliberate and bounded**: all three are written at compile time from the note itself and checked by the index-divergence pass, so a desync is detected rather than silently tolerated.
 
+**A wiki entry also carries `used`, projected from a second ledger.** `augment_wiki/usage.jsonl` records which wiki notes and memory cards were opened (`open`), cited in an answer or discussion (`cite`) and applied (`apply`), one line per event from `usage_log.py` and the connector. Readers never write it or the index: they drop a file in `augment_wiki/usage.pending/`, which `compact_index.py` merges into `usage.jsonl` before projecting `{"opens", "cites", "last_opened", "last_cited"}` onto each wiki entry, recomputed every run and absent for a note never used. It feeds the sweep's Usage section, the dormant notes `answer` names, the "last used" mark on a search hit, and the memory decay lane, which spares a card used since the horizon. `usage: enabled: false` in config.yaml turns recording off; `usage: dormant_days:` (default 180) sets when a note counts as dormant.
+
 **Links are not duplicated into the index.** They live once, in each note's links block. Copying them would create a second version able to disagree with the first, and traversing a handful of files is cheap enough not to be worth that risk.
 
 ## The declarations

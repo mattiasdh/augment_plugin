@@ -111,7 +111,7 @@ const apiHandler = {
     // Checked on every call as well as at sign-in, so removing a login locks it out at once.
     if (!list(env.ALLOWED_GITHUB_LOGINS).includes(login)) return new Response("forbidden", { status: 403 });
     const repo = new GitHubRepo(env.GITHUB_TOKEN, env.GITHUB_REPO, env.GITHUB_BRANCH || "main");
-    return serve(request, { repo, now: () => stamp(env.TIMEZONE), by: PRODUCER });
+    return serve(request, { repo, now: () => stamp(env.TIMEZONE), by: PRODUCER, kv: env.OAUTH_KV });
   },
 };
 

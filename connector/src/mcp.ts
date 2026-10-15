@@ -7,6 +7,7 @@ import type { Repo } from "./github";
 import { Memory, Refused, TYPES, settingsFrom } from "./memory";
 import * as vault from "./vault";
 import * as w from "./write";
+import * as usage from "./usage";
 
 export const VERSION = "0.1.0";
 const PROTOCOLS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"];
@@ -16,11 +17,11 @@ Before a task that names a tool, a file format, a client convention or a skill, 
 A skill whose references live in the vault (under the skills root that config.yaml declares) reads them with vault_read on every use. A change to such a skill's rules, as the person's feedback on its output, is never a memory card: propose it, and park it with memory_offer kind correction and target the reference file's path; the weekly sweep applies it with the person.
 Memory (memory_*) records how the work is done: how a tool, connector or MCP server really behaves, the person's file and output conventions, reusable snippets, working procedures. Test before writing: would this still matter if Claude were not involved? If yes it is content, not memory: offer it with capture_note (or memory_offer when the person is not there to confirm). Never store secrets, anyone else's personal data, or raw text copied from a page or file.
 Memory is never evidence about projects, clients or the domain; vault_search and vault_read are, and the wiki notes cite their sources. Reads see the last push to GitHub, not unsynced edits in Obsidian.
-Writes follow the same rules as every other surface (the plugin's rules/surfaces.md, Connector column): sources are append-only (source_callout, source_set), memory goes through memory_*, nothing is deleted or moved, closed folders stay closed. What needs the plugin's scripts (process, mint, dream, the sweep's checks) cannot run here: say so, and point to a Claude Code session on the vault, which runs them in full from the Claude app too.`;
+Writes follow the same rules as every other surface (the plugin's rules/surfaces.md, Connector column): sources are append-only (source_callout, source_set), memory goes through memory_*, nothing is deleted or moved, closed folders stay closed. After an answer or a discussion, record the notes it cited with usage_cite (and after recall, the cards applied); opens are recorded by vault_read and memory_get themselves. What needs the plugin's scripts (process, mint, dream, the sweep's checks) cannot run here: say so, and point to a Claude Code session on the vault, which runs them in full from the Claude app too.`;
 
 type Args = Record<string, unknown>;
 interface Tool { name: string; description: string; inputSchema: object; run: (a: Args, ctx: Ctx) => Promise<string> }
-export interface Ctx { repo: Repo; now: () => string; by: string }
+export interface Ctx { repo: Repo; now: () => string; by: string; kv?: usage.UsageStore }
 
 const str = (d: string) => ({ type: "string", description: d });
 const strOrList = (d: string) => ({ anyOf: [{ type: "string" }, { type: "array", items: { type: "string" } }], description: d });
@@ -41,6 +42,8 @@ export const TOOLS: Tool[] = [
       const m = await memory(ctx);
       const names = TOOLS.map((t) => t.name);
       const author = String((await vault.loadConfig(ctx.repo)).author ?? "").trim();
+      // Opens buffered since the last flush reach the vault now; a failure only delays them.
+      await usage.flush(ctx.kv, ctx.repo, ctx.now(), ctx.by).catch(() => 0);
       return `AUGMENT CONNECTOR: vault read at commit ${head.oid.slice(0, 7)} (${head.date}). Reads see the last push to GitHub; edits not yet synced from Obsidian are not visible.\n` +
         (author ? `The person is ${author} (author: in config.yaml): a [!note] callout and anything recorded as theirs carries this name.\n`
           : `No author: is set in config.yaml, so a [!note] callout cannot be written until the person's name is added there.\n`) +
@@ -62,7 +65,12 @@ export const TOOLS: Tool[] = [
     name: "memory_get",
     description: "Read one memory card in full by its slug.",
     inputSchema: { type: "object", required: ["slug"], properties: { slug: str("The card's slug, as memory_search or activate lists it.") } },
-    async run(a, ctx) { return (await memory(ctx)).get(String(a.slug ?? "")); },
+    async run(a, ctx) {
+      const slug = String(a.slug ?? "");
+      const text = await (await memory(ctx)).get(slug);
+      await usage.recordOpen(ctx.kv, ctx.repo, `augment_memory/card/${slug}.md`, "memory_get", ctx.now());
+      return text;
+    },
   },
   {
     name: "memory_add",
@@ -124,7 +132,12 @@ export const TOOLS: Tool[] = [
     name: "vault_read",
     description: "Read a wiki note (augment_wiki/...), a memory file (augment_memory/...), an inbox note, or a source the vault's scope rules allow. Out-of-scope, unruled, ignored and #excluded sources are refused with the reason.",
     inputSchema: { type: "object", required: ["path"], properties: { path: str("The note's path from the vault root, ending in .md.") } },
-    async run(a, ctx) { return vault.read(ctx.repo, String(a.path ?? "")); },
+    async run(a, ctx) {
+      const path = String(a.path ?? "").trim().replace(/^\/+/, "");
+      const text = await vault.read(ctx.repo, path);
+      await usage.recordOpen(ctx.kv, ctx.repo, path, "vault_read", ctx.now());
+      return text;
+    },
   },
   {
     name: "capture_note",
@@ -137,6 +150,15 @@ export const TOOLS: Tool[] = [
       const authorship = a.authorship === "person" ? "person" : "model";
       return vault.capture(ctx.repo, { title: String(a.title ?? ""), body: String(a.body ?? ""), authorship, provenance: s(a.provenance) }, ctx.now(), ctx.by);
     },
+  },
+  {
+    name: "usage_cite",
+    description: "At the end of an answer or a discussion, record the wiki notes it cited (kind cite); after recall, the memory cards that were applied (kind apply). One commit of a small usage file, never a change to the notes; the nightly cycle folds it into the index, which is how the weekly sweep sees what the wiki is used for and which notes have gone dormant. Skip it when the person asked to stay off the record.",
+    inputSchema: { type: "object", required: ["ids"], properties: {
+      ids: { type: "array", items: { type: "string" }, description: "Paths of the wiki notes cited (augment_wiki/concept/x.md) or of the cards applied (augment_memory/card/x.md)." },
+      kind: { type: "string", enum: ["cite", "apply"], description: "cite for wiki notes (default), apply for memory cards." },
+      op: str("The operation: answer, discuss or recall.") } },
+    async run(a, ctx) { return usage.cite(ctx.kv, ctx.repo, { ids: a.ids, kind: s(a.kind), op: s(a.op) }, ctx.now(), ctx.by); },
   },
   {
     name: "vault_list",

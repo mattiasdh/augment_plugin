@@ -37,6 +37,8 @@ Insight produced in conversation is lost unless it reaches the source layer, bec
 
 **Offer this explicitly at the end of a substantive session.** Do not assume it happened, and do not write it silently.
 
+Record the wiki notes the discussion leaned on, as `answer` does: `usage_log.py <vault> --kind cite --op discuss <slugs>`, or `usage_cite` through the connector. Skip it off the record.
+
 ## Never
 
 - Edit a wiki note as a result of the conversation. Route through `write`.

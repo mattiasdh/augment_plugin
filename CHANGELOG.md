@@ -2,6 +2,12 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag. A second release on the same day adds a revision letter: `v2026-09-29 Rev. A` here, `2026.9.29-revA` in `plugin.json`.
 
+## v2026-10-15 Rev. A
+
+### New
+
+**The vault now records which wiki notes and memory cards are used.** Each note or card read is recorded (a Read hook in Code and Cowork, `vault_read` and `memory_get` in the connector), `answer`, `discuss` and `recall` record what they cited or applied (`usage_log.py`, or the connector's new `usage_cite`), and a session commits them as one `USAGE:` file in `augment_wiki/usage.pending/`; the nightly compaction folds that into `augment_wiki/usage.jsonl` and projects a `used` field onto each wiki note's index entry. The sweep gains a Usage section (the flag rate's denominator, and a dormant sample to reach back to), `answer` and `vault_search` mark notes not opened in a while without ranking them lower, and a card used since the decay horizon is no longer proposed for archiving.
+
 ## v2026-10-15
 
 ### Improvement

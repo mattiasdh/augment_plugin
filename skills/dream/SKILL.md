@@ -33,7 +33,7 @@ Deletion is available to neither.
 
 Run in order. Each phase writes to history as it goes, so an interrupted run resumes from the last completed item rather than from the beginning.
 
-**0. Fold in what the connector wrote.** `compact_index.py <vault>` first: it merges the ledger entries the remote connector parked in `augment_wiki/history.pending/` (comments and appends from the phone) into `history.jsonl` before anything reads the ledger.
+**0. Fold in what the connector wrote.** `compact_index.py <vault>` first: it merges the ledger entries the remote connector parked in `augment_wiki/history.pending/` (comments and appends from the phone) into `history.jsonl` before anything reads the ledger, and the usage files sessions committed in `augment_wiki/usage.pending/` into `usage.jsonl`, projecting each wiki note's `used` field (reference/scope-and-index.md).
 
 **1. Detect changed inputs.** Compare every indexed source's current content hash against the stored one. Declaring or retagging a source is not an edit and must not trigger a rebuild. Where a hash differs, mark every note compiled from that source `#stale`. This runs first because everything downstream depends on knowing what moved.
 

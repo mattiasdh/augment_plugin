@@ -61,12 +61,15 @@ def main():
             w = {t: 1 for t in tokens(summary)}
             w.update({t: 2 for t in tokens(" ".join(kw))})
             w.update({t: 3 for t in named})
+            u = e.get("used") or {}
+            last = max(str(u.get("last_opened", "")), str(u.get("last_cited", "")))[:10]
             notes.append({
                 "id": i, "title": title, "type": e.get("type"), "kind": e.get("kind"),
                 "status": e.get("status"), "aliases": [str(x) for x in al],
                 "keywords": kw, "summary": summary,
                 "sources": [c.get("source") for c in e.get("compiled_from") or [] if isinstance(c, dict)],
                 "w": dict(sorted(w.items())), "d": sorted(named),
+                **({"u": last} if last else {}),
             })
         elif (not i.startswith("augment_wiki/") and e.get("status") == "processed"
               and not e.get("renamed_to") and scope_of(i, cfg) == "in"):

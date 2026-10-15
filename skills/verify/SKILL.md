@@ -99,13 +99,15 @@ Approved items are applied with the keyword script rather than hand-edited, wher
 
 Then echo the current scope, so what the system may read stays visible rather than becoming invisible configuration.
 
+Read the queue's Usage section with them: sessions that read the vault, notes opened and cited, cards applied. It is the flag rate's denominator, so report the flag rate against it rather than alone.
+
 Three numbers, as trends rather than snapshots. **Flag rate**, corrections raised per week, the primary quality signal now that there is no endorsement step; rising means synthesis is not trustworthy. **Stale backlog**, the proportion of notes stale; persistently high means either the cadence is wrong or the concepts are badly cut. **Processed but unlinked**, sources producing nothing.
 
 The honest reading matters more than the numbers. Flag rate rising while the backlog consolidates means the system is producing material faster than it produces value, and the correct response is to propose slowing the consolidation or narrowing its scope, not to add machinery. **Flag rate near zero is not automatically good**: it may mean the wiki is accurate, or that nobody is reading it closely enough to notice errors. If usage is low, say so rather than reporting the zero as a success.
 
 ## Filter-bubble check
 
-A wiki curated by the person and written by a please-seeking agent entrenches their priors by construction, and fidelity guarantees a faithful mirror rather than an open one. Each sweep, surface and **offer** a `discuss` pass on untested consensus, a standing position or convergence cluster carrying no contradiction and never argued against, and on rubber-stamped synthesis, concepts or links the agent proposed and the person only ever confirmed. The offer is the whole intervention. It never gates, rejects or withholds, and "just tell me" ends it.
+A wiki curated by the person and written by a please-seeking agent entrenches their priors by construction, and fidelity guarantees a faithful mirror rather than an open one. Each sweep, surface and **offer** a `discuss` pass on untested consensus, a standing position or convergence cluster carrying no contradiction and never argued against, and on rubber-stamped synthesis, concepts or links the agent proposed and the person only ever confirmed. The Usage section's dormant sample is a second place to start: notes nobody has opened or cited in months, which a pass can reach back to instead of only the recently compiled ones. The offer is the whole intervention. It never gates, rejects or withholds, and "just tell me" ends it.
 
 ## Quarterly
 

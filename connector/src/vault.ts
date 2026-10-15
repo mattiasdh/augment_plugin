@@ -38,7 +38,7 @@ export function clearCache() { cache.clear(); }
  * starts at a key in column 0 and runs to the next; a column-0 comment is dropped,
  * which is safe because YAML indents every line of a block scalar.
  */
-const CONFIG_SECTIONS = ["scope", "source_root", "memory", "skills", "author"];
+const CONFIG_SECTIONS = ["scope", "source_root", "memory", "skills", "author", "usage"];
 
 export function configSections(text: string, keep = CONFIG_SECTIONS): string {
   const out: string[] = [];
@@ -143,7 +143,7 @@ export async function read(repo: Repo, path: string): Promise<string> {
   return f.text;
 }
 
-interface SearchNote { id: string; title?: string; type?: string; kind?: string; status?: string; aliases?: string[]; keywords?: string[]; summary?: string; sources?: string[];
+interface SearchNote { id: string; title?: string; type?: string; kind?: string; status?: string; aliases?: string[]; keywords?: string[]; summary?: string; sources?: string[]; u?: string;
   w?: Record<string, number>; d?: string[] }
 interface SearchSource { id: string; cited_by?: string[]; t?: string[]; n?: string[] }
 interface SearchIndex { notes: SearchNote[]; sources: SearchSource[] }
@@ -205,12 +205,15 @@ export async function search(repo: Repo, query: string, opts: { limit?: number; 
   if (!qt.size) throw new Refused("no searchable words in the query");
   const config = await loadConfig(repo);
   const hits: [number, number, string][] = [];
+  // Usage annotates, never reorders: a note nobody has opened in a while is pointed out, not pushed down.
+  const recording = idx.notes.some((p) => p.n.u);
   for (const p of idx.notes) {
     const s = scoreNote(qt, p);
     if (!s) continue;
     const n = p.n;
     const al = n.aliases?.length ? `  (also: ${n.aliases.join(", ")})` : "";
-    hits.push([s, 1, `${n.id}  [${n.type ?? "note"}${n.kind ? ` ${n.kind}` : ""}, ${n.status ?? ""}] ${n.title ?? ""}${al}`]);
+    const used = !recording ? "" : n.u ? `  (last used ${n.u})` : "  (not used since usage recording began)";
+    hits.push([s, 1, `${n.id}  [${n.type ?? "note"}${n.kind ? ` ${n.kind}` : ""}, ${n.status ?? ""}] ${n.title ?? ""}${al}${used}`]);
   }
   if (opts.sources !== false) {
     for (const { s: src, words } of idx.sources) {

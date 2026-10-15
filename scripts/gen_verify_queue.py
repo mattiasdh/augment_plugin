@@ -21,6 +21,66 @@ QUEUE = os.path.join(ROOT, "augment_wiki/verify-queue.md")
 MARK = "## Queued for confirmation"
 STAMP = stamp()
 
+def usage_section(notes, cfg, flags):
+    """`## Usage (generated)`: what was read, cited and applied, and what has gone dormant.
+
+    Read from augment_wiki/usage.jsonl plus any pending file not merged yet, so the
+    sweep sees a session that ran after the nightly compaction too. It is the flag
+    rate's denominator, and the dormant sample is where the filter-bubble offer can
+    reach back to older notes rather than only the recently compiled ones."""
+    import datetime
+    u = cfg.get("usage") or {}
+    if u.get("enabled") is False:
+        return ["", "## Usage (generated)", "", "Usage recording is off (`usage: enabled: false` in config.yaml)."]
+    dormant_days = int(u.get("dormant_days", 180))
+    lines = []
+    p = os.path.join(ROOT, "augment_wiki/usage.jsonl")
+    files = ([p] if os.path.exists(p) else []) + sorted(glob.glob(os.path.join(ROOT, "augment_wiki/usage.pending/*.jsonl")))
+    for f in files:
+        for l in open(f, encoding="utf-8"):
+            try:
+                lines.append(json.loads(l))
+            except ValueError:
+                pass
+    today = datetime.date.today()
+    week = (today - datetime.timedelta(days=7)).isoformat()
+    horizon = (today - datetime.timedelta(days=dormant_days)).isoformat()
+    recent = [d for d in lines if str(d.get("at", ""))[:10] >= week]
+    def ids(kind, prefix):
+        return {d["id"] for d in recent if d.get("kind") == kind and str(d.get("id", "")).startswith(prefix)}
+    last = {}
+    for d in lines:
+        i, at = d.get("id"), str(d.get("at", ""))[:10]
+        if i and at > last.get(i, ""):
+            last[i] = at
+    H = ["", "## Usage (generated)", ""]
+    if not lines:
+        H.append("Nothing recorded yet. Opens are recorded by the Read hook in Code and Cowork and by the connector; "
+                 "citations by answer and discuss; applied cards by recall.")
+        return H
+    sessions = {d.get("session") for d in recent}
+    H += [f"- Last 7 days: {len(sessions)} session(s); {len(ids('open', 'augment_wiki/'))} notes opened, "
+          f"{len(ids('cite', 'augment_wiki/'))} cited; {len(ids('open', 'augment_memory/'))} cards opened, "
+          f"{len(ids('apply', 'augment_memory/'))} applied; {flags} flagged. "
+          f"Since {min(str(d.get('at', ''))[:10] for d in lines)}: {len(lines)} events.",]
+    nid = [e["id"] for e in notes]
+    never = [i for i in nid if i not in last]
+    old = [i for i in nid if i in last and last[i] < horizon]
+    cards = sorted(glob.glob(os.path.join(ROOT, "augment_memory/card/*.md")))
+    cids = [os.path.relpath(c, ROOT).replace(os.sep, "/") for c in cards]
+    cnever = [i for i in cids if i not in last]
+    cold = [i for i in cids if i in last and last[i] < horizon]
+    H.append(f"- Dormant (unused in {dormant_days} days, or never since recording began): "
+             f"{len(never) + len(old)} of {len(nid)} wiki notes ({len(never)} never), "
+             f"{len(cnever) + len(cold)} of {len(cids)} memory cards ({len(cnever)} never).")
+    compiled = {e["id"]: str(e.get("compiled", "")) for e in notes}
+    sample = sorted(old, key=lambda i: last[i]) + sorted(never, key=lambda i: compiled.get(i, ""))
+    if sample:
+        H.append("- Five to reach back to, least recently used first: "
+                 + ", ".join(f"`{os.path.basename(i)[:-3]}` ({last.get(i, 'never')})" for i in sample[:5]) + ".")
+    return H
+
+
 def main():
     idx = [json.loads(l) for l in open(IDX, encoding="utf-8") if l.strip()]
     cfg = load_config(ROOT)
@@ -192,8 +252,9 @@ def main():
     H += ["", "## Health (generated)", "",
           f"- Flag rate (`#flagged` notes): {st.get('#flagged', 0)}. Zero means untested unless the wiki is being queried, not verified.",
           f"- Stale backlog: {st.get('#stale', 0)} ({100 * st.get('#stale', 0) / max(len(notes), 1):.0f}%).",
-          f"- Processed-but-unlinked sources: {len(unlinked)} (findable via the `sources` view).",
-          "", "## Folders awaiting a decision (generated)", ""]
+          f"- Processed-but-unlinked sources: {len(unlinked)} (findable via the `sources` view)."]
+    H += usage_section(notes, cfg, st.get('#flagged', 0))
+    H += ["", "## Folders awaiting a decision (generated)", ""]
     if pending:
         H.append("Top-level folders no scope rule touches. Each needs one answer at VERIFY step 1, "
                  "in scope with a default or `in_scope: false`; either way it leaves this list and "

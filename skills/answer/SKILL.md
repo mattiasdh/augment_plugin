@@ -25,6 +25,8 @@ Read `rules/freshness.md` and run the check before retrieving. A clone behind th
 
 **2. Open only what survives the narrowing.** The index says what exists and where; the notes say what they hold. Reading the whole vault to answer a narrow question is what the index exists to prevent.
 
+**Notice what has gone dormant.** An index entry's `used` field (and a `vault_search` hit's "last used") says when a note was last opened or cited. A relevant note nobody has opened in `usage.dormant_days`, or ever, is not ranked lower for it: name it in the answer as "not opened since …", because reaching back to older work is part of what retrieval is for.
+
 **3. Match the depth to the question, and descend into the sources for detail.** The wiki is a point of entry into the sources, not a wall around them. A general question is usually answered from the notes. A detailed one is not: it needs the sources those notes cite, and the other sources in the same context, **including the processed-but-unlinked ones**, meeting notes and how-to files that no concept was extracted from but that still hold the specifics. Reach them through the `sources` view, which lists every source under its project or library context and marks the unlinked ones. An absent wiki note means unprocessed material, not absent material, and the index shows whether the relevant sources are still `#to-process`.
 
 **4. When the question is also about how the work was done**, a format, a convention, a procedure or a tool used before, run the memory search beside the vault search (`memory_search.py <vault> <words>`, or `memory_search` through the connector) and answer that part under its own heading, "How it was done before", naming the cards. Memory is never evidence for the rest of the answer: a card says how to work, a source says what is true, and the two are never blended into one claim.
@@ -55,8 +57,18 @@ published since. Nothing covers acoustic performance, and the two notes are
 linked `contradicts`: see `!tension-vapour-control-in-buffering-assemblies`.
 ```
 
+## Record what was cited
+
+At the end of the answer, record the wiki notes it cited, in both modes:
+
+```
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/usage_log.py" <vault> --kind cite --op answer <slug or path>...
+```
+
+Through the connector, `usage_cite` with the notes' paths; in Tier 2, `augment-runner` `run_script usage_log`. Opens are recorded by themselves. This writes one small file in `augment_wiki/usage.pending/` and nothing else, the one write this skill makes; skip it when the person asked to stay off the record.
+
 ## Never
 
 - Fill a gap with general knowledge presented as vault knowledge. If it comes from outside, say so in the same sentence.
 - Omit the closing gap statement because the answer looks complete. Looking complete is exactly when the omission does damage.
-- Write anything. This skill reads. Something that came out wrong goes to `write`; thinking it through goes to `discuss`.
+- Write anything but the usage record above. This skill reads. Something that came out wrong goes to `write`; thinking it through goes to `discuss`.

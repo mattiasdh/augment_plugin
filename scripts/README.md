@@ -21,7 +21,7 @@ Deterministic implementations, **run and never read into context**. Every one ta
 
 | Script | What it does |
 |---|---|
-| `compact_index.py` | Rebuilds `index.jsonl` from `history.jsonl`, last entry per id. **Never hand-edit the index**; append to history and run this. |
+| `compact_index.py` | Rebuilds `index.jsonl` from `history.jsonl`, last entry per id, and projects each wiki note's `used` from `usage.jsonl`. **Never hand-edit the index**; append to history and run this. |
 | `apply_aliases.py` | Writes a wiki note's `aliases:`, refusing any name none of its sources carries. `--auto --run <id> --reason` marks the nightly backfill. |
 | `apply_keywords.py` | Applies keyword and anchor writes to note bodies and records them. `--auto --run <id> --reason` marks an unattended write. |
 | `undo_run.py` | Reverts every write a run made. `--dry-run` first; `--only slugA::slugB` for a single one. |
@@ -55,6 +55,7 @@ The memory layer (`reference/memory.md`) has no ledger and no compile step, so t
 | `memory_search.py` | Ranks cards by the query words in title, keywords, summary and body. RECALL's search. |
 | `gen_memory_index.py` | Rewrites `augment_memory/index.md` and reports defects, merge candidates, UNSTABLE cards (more than three edits in a week), decay proposals and waiting offers. DREAM phase 7b. `--check` writes nothing. |
 | `memory_context.py` | Every active card a session starts with: project-scoped first, then global, then cards scoped elsewhere, within a character budget. SessionStart hook; ACTIVATE runs it in Chat. Silent outside a vault. |
+| `usage_log.py` | Records which wiki notes and memory cards were opened (PostToolUse hook on Read), cited (`--kind cite`, answer and discuss) and applied (`--kind apply`, recall), and commits them as one `USAGE:` commit of a file in `augment_wiki/usage.pending/` (Stop and SessionEnd hooks). `--off` for off the record. |
 | `memory_recall.py` | Names the few cards a prompt is about, by its rare words in their titles, keywords and summaries. UserPromptSubmit hook; silent when nothing clears the bar. `memory_recall.py <vault> <words>` prints the scores for tuning. |
 | `package_skill.py` | Builds `dist/<skill>.skill` from a skill folder under the declared skills root, deterministically; `--check` reports skill-folder problems (also run by conformance). `reference/skills.md`. |
 

@@ -23,7 +23,7 @@ Search with the names that matter, the tool, the format, the operation, rather t
 
 **3. Open the card for the detail**, `augment_memory/card/<slug>.md`, and follow a `superseded_by` to the card that replaced it.
 
-**4. Use it, and say so.** Name the card in the reply when it changes what you do, so the person can see which memory steered the work.
+**4. Use it, and say so.** Name the card in the reply when it changes what you do, so the person can see which memory steered the work, and record it as applied: `usage_log.py <vault> --kind apply --op recall <slug>`, or `usage_cite` with `kind: apply` through the connector. That is what keeps a card that is used but seldom confirmed out of the decay lane.
 
 **5. Close the loop.** When a card proved right in use, confirm it through `remember` with `seen`. When it proved wrong, correct it there with `update` or a supersession. An unreinforced card drifts out of the index at the sweep, which is the point: memory that is never confirmed was never needed.
 
