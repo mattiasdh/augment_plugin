@@ -5,14 +5,15 @@
  *
  *   vault_list      what a folder holds, as far as the reading rules open it
  *   vault_write     a new note anywhere a note may be created; a whole wiki note or
- *                   skill file replaced; never an existing source
+ *                   skill file replaced; an inbox draft of Claude's replaced while
+ *                   nobody has touched it since; never any other existing source
  *   vault_edit      one exact passage of a skill file replaced, with its CHANGELOG line
  *   source_set      a source's system key, as `source_write.py set`
  *   source_callout  a comment on a source, as `source_write.py callout`
  *   append_history  ledger entries, parked in augment_wiki/history.pending/ because
  *                   GitHub cannot append to a file; `compact_index.py` merges them
  *
- * Never: replace or edit an existing source, write into augment_memory/ (the
+ * Never: replace or edit an existing source (an untouched inbox draft of the connector's own aside), write into augment_memory/ (the
  * memory tools do), write index.jsonl or history.jsonl, delete or move anything,
  * or reach a folder config.yaml ignores, rules out or has not ruled on.
  * Every write is one commit made against the head it read, so it never lands on
@@ -20,7 +21,7 @@
  */
 import type { Change, Repo } from "./github";
 import { Refused, splitNote } from "./memory";
-import { cleanPath, loadConfig, scopeOf, skillsRoot, type Config } from "./vault";
+import { cleanPath, inboxPath, loadConfig, scopeOf, skillsRoot, type Config } from "./vault";
 import { contentHash, KEYS, SourceRefused, writeCallout, writeKey } from "./source";
 
 type Place = "wiki" | "memory" | "skill" | "inbox" | "source" | "closed";
@@ -31,9 +32,25 @@ const CLOSED: Record<string, string> = {
   undecided: "is in a folder the vault's config.yaml has not ruled on yet, and an unruled folder stays closed",
 };
 
-function inbox(config: Config): string {
-  const root = String(config.source_root ?? "").replace(/^\/+|\/+$/g, "");
-  return root ? `${root}/_inbox` : "_inbox";
+const inbox = inboxPath;
+
+/**
+ * Why an existing inbox note may not be replaced, or "" when it may: a Claude draft
+ * nobody has touched since. It must still be `#to-process`, carry `assisted_by:`,
+ * and its last commit must be one of this connector's own (its `Assisted-by:`
+ * trailer). Once the person edits it, files it, or comments on it in their own
+ * words, its last commit is theirs and it is locked like any other source. The
+ * replacement must stay an unfiled Claude draft too.
+ */
+async function draftLock(repo: Repo, p: string, cur: string, next: string, by: string): Promise<string> {
+  const [fc] = splitNote(cur), [fn] = splitNote(next);
+  if (!String(fc.augment ?? "").includes("#to-process") || !fc.assisted_by)
+    return "it is not an unfiled Claude draft (#to-process with assisted_by:)";
+  const msg = await repo.lastCommitMessage(p);
+  if (!msg || !msg.includes(`Assisted-by: ${by}`)) return "its last change is not one of this connector's own writes, so it may hold the person's edit";
+  if (!String(fn.augment ?? "").includes("#to-process") || !fn.assisted_by)
+    return "the replacement must stay an unfiled Claude draft (augment: \"#to-process\" and assisted_by: kept)";
+  return "";
 }
 
 /** Where a path sits, for the write rules, and why it is closed when it is. */
@@ -119,7 +136,10 @@ export async function write(repo: Repo, a: { path: string; content: string; chan
   let verb = "";
   await commitFresh(repo, `WRITE: ${p}\n\nAssisted-by: ${by}`, async () => {
     const cur = await repo.read(p);
-    if (cur && (where === "source" || where === "inbox"))
+    if (cur && where === "inbox") {
+      const why = await draftLock(repo, p, cur.text, text, by);
+      if (why) throw new Refused(`${p} exists and ${why}. A comment goes through source_callout, a status through source_set, and anything else is the person's own edit`);
+    } else if (cur && where === "source")
       throw new Refused(`${p} exists: sources are append-only. A comment goes through source_callout, a status through source_set, and anything else is the person's own edit`);
     if (!cur && (where === "source" || where === "inbox") && !splitNote(text)[0].augment)
       throw new Refused("a new source note carries its declaration in frontmatter (augment: \"#to-process\", created:, updated:, and assisted_by: when Claude drafted any of it)");

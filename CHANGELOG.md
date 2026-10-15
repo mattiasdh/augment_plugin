@@ -2,6 +2,12 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag. A second release on the same day adds a revision letter: `v2026-09-29 Rev. A` here, `2026.9.29-revA` in `plugin.json`.
 
+## v2026-10-15
+
+### Improvement
+
+**The connector reads the inbox, can fix its own untouched drafts, captures without a doubled header, and names the person at `activate`.** An inbox note is readable though config.yaml ignores the folder, so a capture can be checked; an inbox draft may be replaced only while it is still `#to-process`, carries `assisted_by:` and was last changed by the connector, and it locks as soon as the person edits, files or comments on it. `capture_note` keeps a body's own `# title` and `[!ai]` line instead of adding a second of each, and `activate` reports `author:` from config.yaml.
+
 ## v2026-10-12
 
 ### Bug fix

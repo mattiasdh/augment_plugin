@@ -168,7 +168,8 @@ describe("vault", () => {
       "notes/40_LIBRARY/Tagged.md": "---\naugment: \"#excluded\"\n---\nNo.",
       "notes/40_LIBRARY/Excluded thing.md": "No.",
       "notes/40_LIBRARY/private/x.md": "No.",
-      "notes/_inbox/y.md": "No.",
+      "notes/_inbox/y.md": "Fresh capture.",
+      "notes/_inbox/q.md": "---\naugment: \"#excluded\"\n---\nNo.",
       "notes/NEW/z.md": "No.",
     });
     expect(await vault.read(repo, "augment_wiki/concept/pace-layering.md")).toContain("Wiki.");
@@ -176,7 +177,8 @@ describe("vault", () => {
     await expect(vault.read(repo, "notes/40_LIBRARY/Tagged.md")).rejects.toThrow(/#excluded/);
     await expect(vault.read(repo, "notes/40_LIBRARY/Excluded thing.md")).rejects.toThrow(/#excluded/);
     await expect(vault.read(repo, "notes/40_LIBRARY/private/x.md")).rejects.toThrow(/rules out of scope/);
-    await expect(vault.read(repo, "notes/_inbox/y.md")).rejects.toThrow(/ignores/);
+    expect(await vault.read(repo, "notes/_inbox/y.md")).toBe("Fresh capture.");
+    await expect(vault.read(repo, "notes/_inbox/q.md")).rejects.toThrow(/#excluded/);
     await expect(vault.read(repo, "notes/NEW/z.md")).rejects.toThrow(/not ruled on/);
     await expect(vault.read(repo, "notes/40_LIBRARY/../PERSONAL/d.md")).rejects.toThrow(/not a vault path/);
     await expect(vault.read(repo, "augment_wiki/config.yaml")).rejects.toThrow(/markdown/);
@@ -213,6 +215,19 @@ describe("vault", () => {
     const mine = (await repo.read("notes/_inbox/My own words.md"))!.text;
     expect(mine).not.toContain("assisted_by");
     expect(mine).not.toContain("[!ai]");
+  });
+
+  it("keeps a body's own title and provenance instead of adding a second of each", async () => {
+    const repo = vaultRepo();
+    await vault.capture(repo, { title: "Plan", body: "# Plan for the roof\n\n> [!ai] augment/connector, 2026-09-27\n> From the call.\n\nText.", authorship: "model" }, NOW, BY);
+    const both = (await repo.read("notes/_inbox/Plan.md"))!.text;
+    expect(both.match(/^# /gm)).toHaveLength(1);
+    expect(both.match(/\[!ai\]/g)).toHaveLength(1);
+    expect(both).toContain("# Plan for the roof\n\n> [!ai]");
+    await vault.capture(repo, { title: "Titled", body: "# Titled note\n\nText.", authorship: "model", provenance: "From a memo." }, NOW, BY);
+    expect((await repo.read("notes/_inbox/Titled.md"))!.text).toContain(`---\n\n# Titled note\n\n> [!ai] ${BY}, 2026-09-27\n> From a memo.\n\nText.\n`);
+    await vault.capture(repo, { title: "Mine titled", body: "# Mine\n\nWords.", authorship: "person" }, NOW, BY);
+    expect((await repo.read("notes/_inbox/Mine titled.md"))!.text).toContain("---\n\n# Mine\n\nWords.\n");
   });
 });
 
@@ -274,11 +289,16 @@ describe("mcp", () => {
   });
 
   it("returns refusals as tool errors, and activates", async () => {
-    const r = await (await serve(post({ jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "vault_read", arguments: { path: "notes/_inbox/y.md" } } }), ctx())).json() as any;
+    const r = await (await serve(post({ jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "vault_read", arguments: { path: "notes/PERSONAL/d.md" } } }), ctx())).json() as any;
     expect(r.result.isError).toBe(true);
     expect(r.result.content[0].text).toMatch(/^REFUSED: /);
     const a = await (await serve(post([{ jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "activate", arguments: {} } }]), ctx())).json() as any;
     expect(a[0].result.content[0].text).toMatch(/commit abcdef1/);
+    expect(a[0].result.content[0].text).toContain("No author: is set");
+    const named = { repo: new FakeRepo({ "augment_wiki/config.yaml": CONFIG + "author: mdh\n", "augment_wiki/index.jsonl": INDEX }), now: () => NOW, by: BY };
+    vault.clearCache();
+    const b = await (await serve(post({ jsonrpc: "2.0", id: 5, method: "tools/call", params: { name: "activate", arguments: {} } }), named)).json() as any;
+    expect(b.result.content[0].text).toContain("The person is mdh");
     expect(a[0].result.content[0].text).toContain(`serves ${TOOLS.length} tools: ${TOOLS.map((t) => t.name).join(", ")}.`);
   });
 });

@@ -4,6 +4,8 @@ import type { Change, Entry, Head, Repo, RepoFile } from "../src/github";
 export class FakeRepo implements Repo {
   files = new Map<string, { sha: string; text: string }>();
   commits: string[] = [];
+  /** The last commit message per path; a seeded file counts as committed by someone else. */
+  touched = new Map<string, string>();
   private n = 0;
 
   constructor(seed: Record<string, string> = {}) {
@@ -36,10 +38,14 @@ export class FakeRepo implements Repo {
 
   async commit(changes: Change[], message: string, expectedHead: string): Promise<"ok" | "conflict"> {
     if (expectedHead !== this.headOid) return "conflict";
-    for (const c of changes) this.files.set(c.path, { sha: this.sha(), text: c.text });
+    for (const c of changes) { this.files.set(c.path, { sha: this.sha(), text: c.text }); this.touched.set(c.path, message); }
     this.commits.push(message);
     this.bump();
     return "ok";
+  }
+
+  async lastCommitMessage(path: string): Promise<string | null> {
+    return this.touched.get(path) ?? (this.files.has(path) ? "vault backup" : null);
   }
 
   async read(path: string): Promise<RepoFile | null> {
@@ -59,6 +65,7 @@ export class FakeRepo implements Repo {
     if (!sha && cur) return "exists";
     if (sha && (!cur || cur.sha !== sha)) return "conflict";
     this.files.set(path, { sha: this.sha(), text });
+    this.touched.set(path, message);
     this.commits.push(message);
     this.bump();
     return "ok";

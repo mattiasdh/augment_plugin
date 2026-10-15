@@ -6,7 +6,7 @@
  * rules put it in scope (the plugin's `_gen_util.scope_of`, ported) and it does
  * not carry `#excluded`. The wiki and the memory layer are readable whole, since
  * both are written by the system from what scope already allowed. The only write
- * here is a new file in the inbox; changes to existing files go through write.ts, under the rules of the
+ * here is a new file in the inbox, which is also readable though config.yaml ignores it; changes to existing files go through write.ts, under the rules of the
  * plugin's rules/surfaces.md, so the person's text is never rewritten on any surface
  * (source_write.py is ported for the two writes a source takes).
  */
@@ -103,6 +103,12 @@ const WHY: Record<string, string> = {
   undecided: "is in a folder the vault's config.yaml has not ruled on yet, and an unruled folder stays closed",
 };
 
+/** The inbox folder, under the source root when config.yaml names one. */
+export function inboxPath(config: Config): string {
+  const root = String(config.source_root ?? "").replace(/^\/+|\/+$/g, "");
+  return root ? `${root}/_inbox` : "_inbox";
+}
+
 /** The skills root config.yaml declares (`skills: root:`), or "" when none is. */
 export function skillsRoot(config: Config): string {
   const r = String(((config.skills ?? {}) as { root?: string }).root ?? "").trim().replace(/^\/+|\/+$/g, "");
@@ -118,7 +124,10 @@ export async function read(repo: Repo, path: string): Promise<string> {
     // A skill's own files are method, not knowledge: out of the wiki's scope, yet read on every use of the skill.
     system = root !== "" && p.startsWith(root + "/");
   }
-  if (!system) {
+  // The inbox is ignored by scope, since nothing in it is a declared source yet, but its notes are
+  // the person's or Claude's own fresh captures: reading them back is how a capture gets checked.
+  const inInbox = !system && p.startsWith(inboxPath(await loadConfig(repo)) + "/");
+  if (!system && !inInbox) {
     const config = await loadConfig(repo);
     const s = scopeOf(p, config);
     if (s !== "in") throw new Refused(`${p} ${WHY[s]}`);
@@ -272,19 +281,25 @@ export async function capture(repo: Repo, a: { title: string; body: string; auth
   if (!title) throw new Refused("a captured note needs a title");
   if (!a.body?.trim()) throw new Refused("a captured note needs a body");
   const config = await loadConfig(repo);
-  const root = String(config.source_root ?? "").replace(/^\/+|\/+$/g, "");
-  const inbox = root ? `${root}/_inbox` : "_inbox";
+  const inbox = inboxPath(config);
   const name = title.replace(UNSAFE, " ").replace(/\s+/g, " ").trim().slice(0, 120);
   if (!name) throw new Refused("the title leaves no usable file name");
   const path = `${inbox}/${name}.md`;
   const fm = ["---", `augment: "#to-process"`, `created: ${now}`, `updated: ${now}`];
-  let body = `# ${title}\n\n`;
+  // A body that already opens with its own `# Title`, or has its own [!ai] provenance under it,
+  // keeps them: adding a second of each is what produced a doubled header.
+  const given = a.body.trim();
+  const lines = given.split("\n");
+  const own = /^# \S/.test(lines[0]);
+  const head = own ? lines[0] : `# ${title}`;
+  const rest = own ? lines.slice(1).join("\n").replace(/^\n+/, "") : given;
+  let body = `${head}\n\n`;
   if (a.authorship === "model") {
     fm.push(`assisted_by: ${by}`);
     const why = (a.provenance || "Drafted in a Claude conversation and captured through the augment connector.").replace(/\s*\n\s*/g, " ").trim();
-    body += `> [!ai] ${by}, ${now.slice(0, 10)}\n> ${why}\n\n`;
+    if (!/^> \[!ai\]/.test(rest)) body += `> [!ai] ${by}, ${now.slice(0, 10)}\n> ${why}\n\n`;
   }
-  body += a.body.trim() + "\n";
+  body = rest ? body + rest + "\n" : body.replace(/\n+$/, "\n");
   const text = fm.join("\n") + "\n---\n\n" + body;
   const r = await repo.write(path, text, `CAPTURE: ${name}\n\n${a.authorship === "model" ? `Assisted-by: ${by}\n` : ""}`);
   if (r !== "ok") throw new Refused(`${path} exists already; choose a title that says what differs`);

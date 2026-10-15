@@ -24,6 +24,8 @@ export interface Repo {
   readExact(path: string): Promise<RepoFile | null>;
   /** The entries directly inside `dir`, files and folders, or null when there is no such folder. */
   list(dir: string): Promise<Entry[] | null>;
+  /** The message of the last commit on the branch that touched `path`, or null when none did. */
+  lastCommitMessage(path: string): Promise<string | null>;
   /** Several files in one commit, refused ("conflict") when the branch moved past `expectedHead`. */
   commit(changes: Change[], message: string, expectedHead: string): Promise<"ok" | "conflict">;
 }
@@ -153,6 +155,14 @@ export class GitHubRepo implements Repo {
       }
       return "ok";
     }
+  }
+
+  async lastCommitMessage(path: string): Promise<string | null> {
+    const r = await fetch(`${API}/repos/${this.owner}/${this.name}/commits?sha=${encodeURIComponent(this.branch)}&path=${encodeURIComponent(path)}&per_page=1`,
+      { headers: this.headers() });
+    if (!r.ok) throw new Error(`GitHub commits for ${path}: ${r.status}`);
+    const j = (await r.json()) as { commit?: { message?: string } }[];
+    return j[0]?.commit?.message ?? null;
   }
 
   async readDir(dir: string): Promise<RepoFile[]> {

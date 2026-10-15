@@ -40,7 +40,10 @@ export const TOOLS: Tool[] = [
       const head = await ctx.repo.head();
       const m = await memory(ctx);
       const names = TOOLS.map((t) => t.name);
+      const author = String((await vault.loadConfig(ctx.repo)).author ?? "").trim();
       return `AUGMENT CONNECTOR: vault read at commit ${head.oid.slice(0, 7)} (${head.date}). Reads see the last push to GitHub; edits not yet synced from Obsidian are not visible.\n` +
+        (author ? `The person is ${author} (author: in config.yaml): a [!note] callout and anything recorded as theirs carries this name.\n`
+          : `No author: is set in config.yaml, so a [!note] callout cannot be written until the person's name is added there.\n`) +
         `This connector serves ${names.length} tools: ${names.join(", ")}. If any of these is missing from your tool list, claude.ai holds a stale copy of the connector's tools: ask the person to reconnect it (Settings, Connectors) or to switch the missing tools on, and do not substitute another server's tool.\n` +
         (await m.context(s(a.project) ?? ""));
     },
@@ -119,13 +122,13 @@ export const TOOLS: Tool[] = [
   },
   {
     name: "vault_read",
-    description: "Read a wiki note (augment_wiki/...), a memory file (augment_memory/...) or a source the vault's scope rules allow. Out-of-scope, unruled, ignored and #excluded sources are refused with the reason.",
+    description: "Read a wiki note (augment_wiki/...), a memory file (augment_memory/...), an inbox note, or a source the vault's scope rules allow. Out-of-scope, unruled, ignored and #excluded sources are refused with the reason.",
     inputSchema: { type: "object", required: ["path"], properties: { path: str("The note's path from the vault root, ending in .md.") } },
     async run(a, ctx) { return vault.read(ctx.repo, String(a.path ?? "")); },
   },
   {
     name: "capture_note",
-    description: "Write a new note into the inbox of the source layer, with the person's agreement. Create-only: it never touches an existing note. Model-drafted prose is marked as assisted; the person's own dictated words are not. Inbox notes stay unaddressed until the person files them.",
+    description: "Write a new note into the inbox of the source layer, with the person's agreement. Create-only: it never touches an existing note. Model-drafted prose is marked as assisted; the person's own dictated words are not. A body that opens with its own # title, or its own [!ai] provenance under it, keeps them rather than getting a second. Inbox notes stay unaddressed until the person files them.",
     inputSchema: { type: "object", required: ["title", "body", "authorship"], properties: {
       title: str("The note's title; it also names the file."), body: str("The note's content in markdown."),
       authorship: { type: "string", enum: ["model", "person"], description: "model: Claude drafted it. person: the person's own words, transcribed." },
@@ -143,7 +146,7 @@ export const TOOLS: Tool[] = [
   },
   {
     name: "vault_write",
-    description: "Write a whole markdown note, as Tier 2's vault_write does, under the same rules (the plugin's rules/surfaces.md). Creates a new source note at an address the person named, or in the inbox (frontmatter with augment: \"#to-process\" included). Creates or replaces a wiki note only as part of process or mint, which need a script-capable surface for their ledger, so in practice rarely here. Creates or replaces a file under the skills root; a skill's references/ file needs the person's approval and a changelog line. Never replaces an existing source (source_callout, source_set), never writes augment_memory/ (memory tools), never a folder the config closes.",
+    description: "Write a whole markdown note, as Tier 2's vault_write does, under the same rules (the plugin's rules/surfaces.md). Creates a new source note at an address the person named, or in the inbox (frontmatter with augment: \"#to-process\" included). Replaces an inbox draft only while it is Claude's untouched capture: still #to-process, assisted_by: set, last changed by this connector; the replacement keeps both. Creates or replaces a wiki note only as part of process or mint, which need a script-capable surface for their ledger, so in practice rarely here. Creates or replaces a file under the skills root; a skill's references/ file needs the person's approval and a changelog line. Never replaces an existing source (source_callout, source_set), never writes augment_memory/ (memory tools), never a folder the config closes.",
     inputSchema: { type: "object", required: ["path", "content"], properties: {
       path: str("The note's path from the vault root, ending in .md."), content: str("The complete file, frontmatter included."),
       changelog: str("For a skill's references/ file: the one-line description of the approved rule change, logged in the skill's CHANGELOG.md in the same commit.") } },

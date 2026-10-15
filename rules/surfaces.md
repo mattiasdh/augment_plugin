@@ -55,7 +55,7 @@ The remote connector (`connector/`, for Chat on the web and the phone) is the th
 
 **Never do these in Tier 2 or through the connector.** The connector refuses each in code; in Tier 2 they rest on this rule.
 
-- Write an existing source with `vault_write`, `vault_patch`, `vault_append` or `vault_edit`. Rewriting the file is exactly the read-and-rewrite of the person's text the method forbids. Source writes go through `source_write.py` only (in the connector, its ports `source_set` and `source_callout`), which is also the Tier 1 path.
+- Write an existing source with `vault_write`, `vault_patch`, `vault_append` or `vault_edit`. Rewriting the file is exactly the read-and-rewrite of the person's text the method forbids. Source writes go through `source_write.py` only (in the connector, its ports `source_set` and `source_callout`), which is also the Tier 1 path. The connector makes one exception, checked in code: an inbox draft Claude captured may be replaced while it is still `#to-process`, carries `assisted_by:` and was last changed by the connector itself, since then no text in it is the person's.
 - Append to the ledger by editing `history.jsonl`, or write `index.jsonl` at all.
 - Delete or move anything (`vault_delete`, `vault_move`). Nothing is deleted, and a rename is the person's act.
 - Write into a folder `config.yaml` ignores, rules out or has not ruled on, except the declared skills root and the inbox.

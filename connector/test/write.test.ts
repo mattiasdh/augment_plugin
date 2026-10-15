@@ -66,6 +66,35 @@ function repoWith(extra: Record<string, string> = {}) {
   return new FakeRepo({ "augment_wiki/config.yaml": CONFIG + "author: mdh\n", "augment_wiki/index.jsonl": INDEX, ...extra });
 }
 
+describe("an untouched inbox draft of Claude's", () => {
+  beforeEach(() => vault.clearCache());
+  const draft = (body: string, extra = "") => `---\naugment: "#to-process"\ncreated: ${NOW}\nupdated: ${NOW}\nassisted_by: ${BY}\n${extra}---\n\n${body}\n`;
+
+  it("may be replaced while it is still the connector's own capture", async () => {
+    const repo = repoWith();
+    await vault.capture(repo, { title: "Draft", body: "# Draft\n\n# Draft\n\nText.", authorship: "model" }, NOW, BY);
+    expect(await w.write(repo, { path: "notes/_inbox/Draft.md", content: draft("# Draft\n\nText.") }, NOW.slice(0, 10), BY)).toContain("replaced");
+    expect(await w.write(repo, { path: "notes/_inbox/Draft.md", content: draft("# Draft\n\nText, revised.") }, NOW.slice(0, 10), BY)).toContain("replaced");
+  });
+
+  it("is locked once the person has touched it, or when it is not a Claude draft", async () => {
+    const repo = repoWith({ "notes/_inbox/Edited.md": draft("# Edited\n\nMine now.") });
+    await expect(w.write(repo, { path: "notes/_inbox/Edited.md", content: draft("# Edited\n\nOverwrite.") }, NOW.slice(0, 10), BY)).rejects.toThrow(/may hold the person's edit/);
+    await vault.capture(repo, { title: "Own words", body: "Dictated.", authorship: "person" }, NOW, BY);
+    await expect(w.write(repo, { path: "notes/_inbox/Own words.md", content: draft("x") }, NOW.slice(0, 10), BY)).rejects.toThrow(/not an unfiled Claude draft/);
+    await vault.capture(repo, { title: "Keep tags", body: "Text.", authorship: "model" }, NOW, BY);
+    await expect(w.write(repo, { path: "notes/_inbox/Keep tags.md", content: "---\naugment: \"#processed\"\n---\nx\n" }, NOW.slice(0, 10), BY)).rejects.toThrow(/must stay an unfiled Claude draft/);
+    await w.sourceSet(repo, { path: "notes/_inbox/Keep tags.md", key: "augment", value: "#processed" }, BY);
+    await expect(w.write(repo, { path: "notes/_inbox/Keep tags.md", content: draft("x") }, NOW.slice(0, 10), BY)).rejects.toThrow(/not an unfiled Claude draft/);
+  });
+
+  it("does not open a filed source to replacement", async () => {
+    const repo = repoWith();
+    await w.write(repo, { path: "notes/40_LIBRARY/New.md", content: draft("# New\n\nText.") }, NOW.slice(0, 10), BY);
+    await expect(w.write(repo, { path: "notes/40_LIBRARY/New.md", content: draft("# New\n\nAgain.") }, NOW.slice(0, 10), BY)).rejects.toThrow(/append-only/);
+  });
+});
+
 describe("the connector's column of surfaces.md", () => {
   beforeEach(() => vault.clearCache());
 
