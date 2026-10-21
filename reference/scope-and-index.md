@@ -57,6 +57,10 @@ scope:
       default: "#excluded"
     - path: "notes/20-29 Clients"
       in_scope: false
+    - path: "notes/11 Projects"         # projects numbered 200 and up are in, the rest out
+      in_scope: false
+      in_scope_from: 200
+      default: "#to-process"
 
 harvest:                        # narrower than #to-process: dated decisions only
   mode: decision-harvest
@@ -64,6 +68,8 @@ harvest:                        # narrower than #to-process: dated decisions onl
 ```
 
 `contract_version` records which plugin release last compiled this vault. Where it does not match the installed plugin, the cycle reports a migration notice rather than compiling on, since a vault compiled under one set of rules and maintained under another drifts in ways no check downstream can see.
+
+**A numbering threshold is written so it fails closed.** `in_scope_from: N` on a rule opens each entry directly under its folder whose name starts with a 3-digit project number of N or more (`840 Harbour offices`, `205 School.md`); everything else under it, a lower number or a name with no project number such as a dated file, keeps the rule's own `in_scope`. Write it beside `in_scope: false`: a reader that predates the key then reads the whole folder as out rather than in, so an old connector or script closes a new project instead of opening the ones below the line. A longer rule still wins, so an exception below the threshold is declared on its own path.
 
 The house language is derived once: a vault whose sources are monolingual takes that language, a mixed archive is asked, an unanswered one gets `en`. Changing it later means recompiling the wiki.
 

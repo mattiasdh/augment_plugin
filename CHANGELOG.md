@@ -2,6 +2,12 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag. A second release on the same day adds a revision letter: `v2026-09-29 Rev. A` here, `2026.9.29-revA` in `plugin.json`.
 
+## v2026-10-21
+
+### Bug fix
+
+**A new project above the numbering threshold is in scope without its own rule, and a new folder at any depth reaches the sweep.** A scope rule can carry `in_scope_from: N` beside `in_scope: false`, opening each entry under it whose 3-digit project number is N or more (in `_gen_util.scope_of` and the connector's `scopeOf`, held to each other by the parity test); a reader that predates the key reads the folder as out, so the threshold fails closed. `undecided_folders` looked only at the vault root, where the source root is always engaged, so a new project folder showed as one more file in the census; it now reports the highest unruled folder at any depth.
+
 ## v2026-10-15 Rev. A
 
 ### New

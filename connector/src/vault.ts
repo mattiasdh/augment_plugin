@@ -15,7 +15,7 @@ import type { Repo } from "./github";
 import { Refused, splitNote, tokens } from "./memory";
 
 export type Config = Record<string, unknown>;
-interface Rule { path?: string; in_scope?: boolean }
+interface Rule { path?: string; in_scope?: boolean; in_scope_from?: number | string }
 interface Entry { id: string; title?: string; type?: string; kind?: string; status?: string; renamed_to?: string; deleted?: unknown; produced?: string[] }
 
 const TTL_MS = 300_000;  // five minutes: fewer cold loads, and a scope change still arrives within minutes
@@ -86,7 +86,22 @@ export function scopeOf(path: string, config: Config): "ignore" | "in" | "out" |
     if ((path === d || path.startsWith(d + "/")) && (best === null || d.length > String(best.path ?? "").length)) best = r;
   }
   if (best === null) return "undecided";
-  return best.in_scope ? "in" : "out";
+  return ruleAdmits(best, path) ? "in" : "out";
+}
+
+/**
+ * `_gen_util.rule_admits`: a rule with `in_scope_from: N` beside `in_scope: false` opens
+ * the entries directly under its folder whose name starts with a 3-digit project number
+ * of N or more. A reader that predates the key reads the folder as out: it fails closed.
+ */
+function ruleAdmits(rule: Rule, path: string): boolean {
+  const d = String(rule.path ?? "");
+  if (rule.in_scope_from !== undefined && rule.in_scope_from !== null && path.startsWith(d + "/")) {
+    const m = /^(\d{3})(?!\d)/.exec(path.slice(d.length + 1).split("/")[0]);
+    const from = Number(rule.in_scope_from);
+    if (m && Number.isFinite(from) && Number(m[1]) >= from) return true;
+  }
+  return !!rule.in_scope;
 }
 
 export function cleanPath(path: string): string {

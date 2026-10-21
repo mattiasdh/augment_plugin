@@ -11,7 +11,7 @@ log. That curated tail is preserved untouched. Run from the vault root.
 import _cli
 import glob, json, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _gen_util import stamp, load_config, scope_of, undecided_folders, display_path, source_path
+from _gen_util import stamp, load_config, scope_of, governing_rule, undecided_folders, display_path, source_path
 from detect_changes import is_source_entry, likely_rename, edited_rename
 from collections import Counter
 
@@ -143,7 +143,9 @@ def main():
                 pending_rename_targets.add(t)
     backlog_rows = []
     for r in scope.get("rules", []):
-        if not r.get("in_scope") or r.get("default") != "#to-process":
+        # A threshold rule (`in_scope_from`) is out by itself but opens its numbered
+        # projects, so it is walked too; scope_of below keeps only the files it admits.
+        if not (r.get("in_scope") or r.get("in_scope_from") is not None) or r.get("default") != "#to-process":
             continue
         rp = str(r.get("path", ""))
         full = os.path.join(ROOT, rp)
@@ -152,7 +154,7 @@ def main():
         files = [os.path.relpath(f, ROOT) for f in glob.glob(os.path.join(full, "**/*.md"), recursive=True)]
         # Only count a file this rule actually governs; a more specific nested
         # rule may claim it instead (scope_of's longest-path precedence, CONTRACT §9).
-        files = [f for f in files if scope_of(f, cfg) == "in"]
+        files = [f for f in files if governing_rule(f, cfg) is r and scope_of(f, cfg) == "in"]
         missing = sorted(f for f in files if f not in indexed_ids and f not in pending_rename_targets)
         if missing:
             backlog_rows.append((rp, missing, len(files)))
@@ -248,7 +250,8 @@ def main():
          f"- Sources indexed: {len(srcs)}. Processed-but-unlinked (`produced: []`): {len(unlinked)}.",
          "- Scope:"]
     for r in scope.get("rules", []):
-        H.append(f"    - {'IN ' if r.get('in_scope') else 'OUT'} {r.get('default', ''):11} `{r['path']}`")
+        state = "IN " if r.get("in_scope") else f"OUT, IN from {r['in_scope_from']}" if r.get("in_scope_from") is not None else "OUT"
+        H.append(f"    - {state} {r.get('default', ''):11} `{r['path']}`")
     H += ["", "## Health (generated)", "",
           f"- Flag rate (`#flagged` notes): {st.get('#flagged', 0)}. Zero means untested unless the wiki is being queried, not verified.",
           f"- Stale backlog: {st.get('#stale', 0)} ({100 * st.get('#stale', 0) / max(len(notes), 1):.0f}%).",
@@ -256,7 +259,7 @@ def main():
     H += usage_section(notes, cfg, st.get('#flagged', 0))
     H += ["", "## Folders awaiting a decision (generated)", ""]
     if pending:
-        H.append("Top-level folders no scope rule touches. Each needs one answer at VERIFY step 1, "
+        H.append("Folders no scope rule has ruled on, at any depth (the highest one with no rule inside it). Each needs one answer at VERIFY step 1, "
                  "in scope with a default or `in_scope: false`; either way it leaves this list and "
                  "is not asked again, so what remains here is genuinely unanswered.")
         H.append("")

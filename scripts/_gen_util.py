@@ -63,15 +63,44 @@ def scope_of(path, config):
     for ig in sc.get("ignore", []):
         if path == ig or path.startswith(ig.rstrip("/") + "/"):
             return "ignore"
+    best = governing_rule(path, config)
+    if best is None:
+        return "undecided"
+    return "in" if rule_admits(best, path) else "out"
+
+
+def governing_rule(path, config):
+    """The scope rule that decides `path`: the longest rule path containing it, or None."""
     best = None
-    for r in sc.get("rules", []):
+    for r in ((config or {}).get("scope") or {}).get("rules", []):
         d = str(r.get("path", ""))
         if (path == d or path.startswith(d + "/")) and (
                 best is None or len(d) > len(str(best.get("path", "")))):
             best = r
-    if best is None:
-        return "undecided"
-    return "in" if best.get("in_scope") else "out"
+    return best
+
+
+PROJECT_NUMBER = re.compile(r"^(\d{3})(?!\d)")
+
+
+def rule_admits(rule, path):
+    """Whether `rule`, the one governing `path`, puts it in scope.
+
+    A rule may carry `in_scope_from: N` beside `in_scope: false`: the entry directly
+    under the rule's folder (a project folder or file) is in scope when its name
+    starts with a 3-digit project number of N or more. Written that way round, a
+    reader that predates the key reads the whole folder as out, so the threshold
+    fails closed. A dated name such as `230309_…` carries no project number."""
+    frm = rule.get("in_scope_from")
+    d = str(rule.get("path", ""))
+    if frm is not None and path.startswith(d + "/"):
+        m = PROJECT_NUMBER.match(path[len(d) + 1:].split("/")[0])
+        try:
+            if m and int(m.group(1)) >= int(frm):
+                return True
+        except (TypeError, ValueError):
+            pass
+    return bool(rule.get("in_scope"))
 
 
 def source_path(root, sid):
@@ -102,28 +131,39 @@ def skills_root(root, config=None):
 
 
 def undecided_folders(root, config):
-    """Top-level folders no scope rule touches at all, as (name, .md count).
+    """Folders no scope rule has ruled on, as (path, .md count), at any depth.
 
-    The decision list VERIFY works: a folder is here only while nothing anywhere
-    inside it has ever been ruled on, so engaging with one subfolder takes the whole
-    tree off the list. That is what makes the list drain to empty and stay there,
-    and it is why a genuinely new folder stands out at the next sweep without the
-    system keeping a separate register of what it has already seen.
+    The decision list VERIFY works: the highest folder that is undecided and has no
+    rule anywhere inside it, so engaging with one subfolder takes the whole tree off
+    the list. That is what makes the list drain to empty and stay there, and it is
+    why a genuinely new folder stands out at the next sweep without the system
+    keeping a separate register of what it has already seen. It descends into
+    folders a rule reaches inside (the source root, a project folder with ruled
+    subfolders), since that is where new folders appear; until 2026-10-21 it looked
+    at the vault root only, where the source root is always engaged, so a new
+    project folder showed as nothing but one more file in the census.
     """
     sc = (config or {}).get("scope") or {}
     touched = [str(r.get("path", "")) for r in sc.get("rules", [])]
     out = []
-    for name in sorted(os.listdir(root)):
-        full = os.path.join(root, name)
-        if not os.path.isdir(full) or name.startswith(".") or name in ("augment_wiki", "augment_memory"):
-            continue
-        if scope_of(name, config) != "undecided":
-            continue
-        if any(t == name or t.startswith(name + "/") for t in touched):
-            continue                      # a rule reaches inside it: already engaged
-        n = sum(len(fs) for _, _, fs in os.walk(full)
-                for fs in [[f for f in fs if f.endswith(".md")]])
-        out.append((name, n))
+
+    def visit(rel):
+        full = os.path.join(root, rel) if rel else root
+        for name in sorted(os.listdir(full)):
+            sub = f"{rel}/{name}" if rel else name
+            if not os.path.isdir(os.path.join(full, name)) or name.startswith("."):
+                continue
+            if not rel and name in ("augment_wiki", "augment_memory"):
+                continue
+            state = scope_of(sub, config)
+            inside = any(t.startswith(sub + "/") for t in touched)
+            if state == "undecided" and not inside:
+                n = sum(len([f for f in fs if f.endswith(".md")]) for _, _, fs in os.walk(os.path.join(root, sub)))
+                if n:
+                    out.append((sub, n))
+            elif state == "undecided" or (state in ("in", "out") and inside):
+                visit(sub)                # partly ruled: a new folder may sit inside
+    visit("")
     return out
 
 

@@ -91,6 +91,12 @@ scope:
       in_scope: true
     - path: "notes/ASSETS/skills"
       in_scope: false
+    - path: "notes/PROJECTS"
+      in_scope: false
+      in_scope_from: 200
+      default: "#to-process"
+    - path: "notes/PROJECTS/176 Old exception"
+      in_scope: true
 skills:
   root: notes/ASSETS/skills
 `;

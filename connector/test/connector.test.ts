@@ -1,3 +1,4 @@
+import { parse as parseYaml } from "yaml";
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -74,14 +75,15 @@ print(json.dumps([M.render_index(cards, 150)[0], M.render_index(cards, 2)[0]]))`
 
   it("decides scope as _gen_util.scope_of does", () => {
     const paths = ["notes/40_LIBRARY/a.md", "notes/40_LIBRARY/private/b.md", "notes/_inbox/c.md", "notes/PERSONAL/d.md",
-      "notes/PERSONAL/READING/e.md", "notes/OTHER/f.md", "notes/40_LIBRARYX/g.md"];
+      "notes/PERSONAL/READING/e.md", "notes/OTHER/f.md", "notes/40_LIBRARYX/g.md",
+      "notes/PROJECTS/840 Example/x.md", "notes/PROJECTS/199 Small/x.md", "notes/PROJECTS/176 Old exception/x.md",
+      "notes/PROJECTS/230309_969_dated.md", "notes/PROJECTS/2000/x.md", "notes/PROJECTS/readme.md", "notes/PROJECTS/200.md"];
     const out = python(`import json, yaml, _gen_util as G
 cfg = yaml.safe_load(${JSON.stringify(CONFIG)})
 print(json.dumps([G.scope_of(p, cfg) for p in ${JSON.stringify(paths)}]))`);
-    const cfg = { scope: { ignore: ["notes/_inbox"], rules: [
-      { path: "notes/40_LIBRARY", in_scope: true }, { path: "notes/40_LIBRARY/private", in_scope: false },
-      { path: "notes/PERSONAL", in_scope: false }, { path: "notes/PERSONAL/READING", in_scope: true }] } };
+    const cfg = parseYaml(CONFIG);
     expect(paths.map((p) => vault.scopeOf(p, cfg))).toEqual(JSON.parse(out!));
+    expect(paths.slice(7).map((p) => vault.scopeOf(p, cfg))).toEqual(["in", "out", "in", "out", "out", "out", "in"]);
   });
 });
 
