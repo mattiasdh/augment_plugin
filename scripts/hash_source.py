@@ -62,5 +62,10 @@ def content_hash(path):
 
 
 if __name__ == "__main__":
-    for p in sys.argv[1:]:
-        print(content_hash(p), p)
+    # One file: the bare hash, so a caller can take the whole line as the hash (on
+    # 2026-10-16 a stamp read "<hash> <path>" whole and wrote four wrong hashes to
+    # history). Several files, or --path: "<hash> <path>" per line, to tell them apart.
+    paths = [a for a in sys.argv[1:] if a != "--path"]
+    with_path = "--path" in sys.argv[1:] or len(paths) > 1
+    for p in paths:
+        print(f"{content_hash(p)} {p}" if with_path else content_hash(p))

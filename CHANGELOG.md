@@ -2,6 +2,12 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag. A second release on the same day adds a revision letter: `v2026-09-29 Rev. A` here, `2026.9.29-revA` in `plugin.json`.
 
+## v2026-10-24
+
+### Bug fix
+
+**`hash_source.py` prints the bare hash for one file.** It printed `<hash> <path>`, and a stamp that took the whole line as the hash wrote four wrong hashes to history on 2026-10-16; several files, or `--path`, still print the hash and the path per line.
+
 ## v2026-10-21
 
 ### Bug fix
