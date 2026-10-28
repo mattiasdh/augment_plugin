@@ -44,7 +44,7 @@ def main():
     where = "augment_memory/card/" if root == (M.dir_setting(os.environ.get("CLAUDE_PROJECT_DIR")) or os.getcwd()) \
         else os.path.join(root, "augment_memory", "card") + "/"
     head = (f"AUGMENT MEMORY: {M.n(len(active), 'card')} for this session ({len(mine)} scoped to {project}, "
-            f"{len(general)} global, {len(other)} scoped elsewhere, which apply when the task matches their scope). One line each; the card at {where}<slug>.md holds the detail, and the "
+            f"{len(general)} global, {len(other)} scoped elsewhere, which apply when the task matches their scope). One line each; the card at {where}<type>/<slug>.md holds the detail, and the "
             f"recall skill searches all of them. Memory says how to work, never what is true about the domain; "
             f"the remember skill records what this session learns.")
     budget, used, out, left = int(cfg["inject_chars"]), 0, [head], 0

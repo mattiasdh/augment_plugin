@@ -55,7 +55,7 @@ def last_used(root):
         except ValueError:
             continue
         i = str(d.get("id", ""))
-        if i.startswith(CARD_DIR.replace(os.sep, "/") + "/") and d.get("kind") in ("open", "apply"):
+        if (i.startswith(CARD_DIR.replace(os.sep, "/") + "/") or i.endswith("/MEMORY.md")) and d.get("kind") in ("open", "apply"):
             slug, at = os.path.basename(i)[:-3], str(d.get("at", ""))[:10]
             if at > out.get(slug, ""):
                 out[slug] = at
@@ -124,17 +124,62 @@ def scopes(fm):
     return [s.lower() for s in as_list(fm.get("scope"))] or ["global"]
 
 
-def load_cards(root):
-    """Every card as (slug, frontmatter, body), sorted by slug."""
+def card_files(root):
+    """{slug: path} for every card: in its type folder, `card/<type>/<slug>.md`, or
+    flat, `card/<slug>.md`, the layout before 2026-10-28 that a vault mid-migration
+    may still hold. A slug is unique across the types; where both exist the type
+    folder wins."""
     d = os.path.join(root, CARD_DIR)
-    out = []
+    out = {}
     if not os.path.isdir(d):
         return out
     for f in sorted(os.listdir(d)):
         if f.endswith(".md"):
-            text = open(os.path.join(d, f), encoding="utf-8").read()
-            fm, body = split_note(text)
-            out.append((f[:-3], fm, body))
+            out[f[:-3]] = os.path.join(d, f)
+    for t in sorted(os.listdir(d)):
+        sub = os.path.join(d, t)
+        if os.path.isdir(sub) and not t.startswith("."):
+            for f in sorted(os.listdir(sub)):
+                if f.endswith(".md"):
+                    out[f[:-3]] = os.path.join(sub, f)
+    return out
+
+
+def card_path(root, slug, type_=None):
+    """Where a card is, or, for a new card, where it goes: `card/<type>/<slug>.md`."""
+    have = card_files(root).get(slug)
+    if have:
+        return have
+    return os.path.join(root, CARD_DIR, type_, slug + ".md") if type_ else os.path.join(root, CARD_DIR, slug + ".md")
+
+
+def skill_memories(root):
+    """Every skill's own memory, `<skills root>/<skill>/MEMORY.md` (reference/skills.md),
+    as (skill, frontmatter, body, path). The skills root is config.yaml's `skills: root:`."""
+    from _gen_util import skills_root
+    sr = skills_root(root)
+    base = os.path.join(root, sr) if sr else ""
+    out = []
+    if not sr or not os.path.isdir(base):
+        return out
+    for d in sorted(os.listdir(base)):
+        p = os.path.join(base, d, "MEMORY.md")
+        if os.path.isfile(p):
+            fm, body = split_note(open(p, encoding="utf-8").read())
+            out.append((d, fm, body, p))
+    return out
+
+
+def card_rel(path, root):
+    return os.path.relpath(path, root).replace(os.sep, "/")
+
+
+def load_cards(root):
+    """Every card as (slug, frontmatter, body), sorted by slug."""
+    out = []
+    for slug, p in sorted(card_files(root).items()):
+        fm, body = split_note(open(p, encoding="utf-8").read())
+        out.append((slug, fm, body))
     return out
 
 

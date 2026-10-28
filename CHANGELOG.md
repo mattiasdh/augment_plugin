@@ -2,6 +2,12 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag. A second release on the same day adds a revision letter: `v2026-09-29 Rev. A` here, `2026.9.29-revA` in `plugin.json`.
 
+## v2026-10-28
+
+### New
+
+**Every skill keeps its own memory beside its rules, and memory cards sit in folders by type.** A skill's `MEMORY.md` under the skills root holds what its runs learned, read at Preflight and rewritten at the end (`skill_memory.py`, and the connector's `skill_memory_get` and `skill_memory_update`); the sweep's new Skills section lists a memory newer than the references, so settled lessons are promoted into `references/` with the person's approval. Cards now live in `augment_memory/card/<type>/`, every reader also accepting the flat layout until `migrate_cards.py` moves them; a retype moves the file, and `memory_search` finds skill memories too.
+
 ## v2026-10-24
 
 ### Bug fix

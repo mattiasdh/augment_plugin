@@ -80,9 +80,23 @@ def tracked(root, path):
     parts = rel.split("/")
     if len(parts) == 3 and parts[0] == "augment_wiki" and parts[1] in WIKI_DIRS:
         return rel
-    if len(parts) == 3 and parts[0] == "augment_memory" and parts[1] == "card":
+    # A card, in its type folder (card/<type>/<slug>.md) or flat (card/<slug>.md, before 2026-10-28).
+    if parts[:2] == ["augment_memory", "card"] and len(parts) in (3, 4):
+        return rel
+    # A skill's own memory, augment_skills/<skill>/MEMORY.md (reference/skills.md).
+    if len(parts) == 3 and parts[2] == "MEMORY.md" and parts[0] == skills_root(root):
         return rel
     return ""
+
+
+def skills_root(root):
+    """`skills: root:` from config.yaml, read without a YAML parser."""
+    try:
+        text = open(os.path.join(root, MARKER), encoding="utf-8").read()
+    except OSError:
+        return ""
+    m = re.search(r"^skills:\s*\n(?:[ \t]+.*\n)*?[ \t]+root:\s*['\"]?([^'\"\n#]+?)['\"]?\s*(?:#.*)?$", text, re.M)
+    return m.group(1).strip().strip("/") if m else ""
 
 
 def resolve_id(root, ref):
@@ -92,7 +106,11 @@ def resolve_id(root, ref):
         return rel
     slug = os.path.basename(ref).removesuffix(".md")
     hits = [h for h in glob.glob(os.path.join(root, "augment_wiki", "*", slug + ".md"))
-            + glob.glob(os.path.join(root, "augment_memory", "card", slug + ".md"))]
+            + glob.glob(os.path.join(root, "augment_memory", "card", slug + ".md"))
+            + glob.glob(os.path.join(root, "augment_memory", "card", "*", slug + ".md"))]
+    sr = skills_root(root)
+    if sr and os.path.isfile(os.path.join(root, sr, slug, "MEMORY.md")):
+        hits.append(os.path.join(root, sr, slug, "MEMORY.md"))   # a skill named by its folder
     hits = [tracked(root, h) for h in hits]
     hits = [h for h in hits if h]
     return hits[0] if len(hits) == 1 else ""

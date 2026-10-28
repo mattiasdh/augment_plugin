@@ -66,7 +66,7 @@ def usage_section(notes, cfg, flags):
     nid = [e["id"] for e in notes]
     never = [i for i in nid if i not in last]
     old = [i for i in nid if i in last and last[i] < horizon]
-    cards = sorted(glob.glob(os.path.join(ROOT, "augment_memory/card/*.md")))
+    cards = sorted(glob.glob(os.path.join(ROOT, "augment_memory/card/*.md")) + glob.glob(os.path.join(ROOT, "augment_memory/card/*/*.md")))
     cids = [os.path.relpath(c, ROOT).replace(os.sep, "/") for c in cards]
     cnever = [i for i in cids if i not in last]
     cold = [i for i in cids if i in last and last[i] < horizon]
@@ -79,6 +79,41 @@ def usage_section(notes, cfg, flags):
         H.append("- Five to reach back to, least recently used first: "
                  + ", ".join(f"`{os.path.basename(i)[:-3]}` ({last.get(i, 'never')})" for i in sample[:5]) + ".")
     return H
+
+
+def skills_section(cfg):
+    """`## Skills (generated)`: each skill's memory against its references.
+
+    A skill's MEMORY.md collects what runs learned; the sweep promotes settled
+    lessons into `references/` with the person's approval and trims the file
+    (reference/skills.md). A memory updated after the skill's last approved change
+    is what this lists, so the promotion question reaches the sweep without anyone
+    reading every skill folder."""
+    from _gen_util import skills_root
+    sr = skills_root(ROOT, cfg)
+    base = os.path.join(ROOT, sr) if sr else ""
+    H = ["", "## Skills (generated)", ""]
+    if not base or not os.path.isdir(base):
+        return H + ["No skills root declared."]
+    rows = []
+    for d in sorted(os.listdir(base)):
+        sd = os.path.join(base, d)
+        if d.startswith((".", "_")) or not os.path.isfile(os.path.join(sd, "SKILL.md")):
+            continue
+        mp, cp = os.path.join(sd, "MEMORY.md"), os.path.join(sd, "CHANGELOG.md")
+        last = max(re.findall(r"\b(20\d\d-\d\d-\d\d)\b", open(cp, encoding="utf-8").read()) or [""]) if os.path.isfile(cp) else ""
+        if not os.path.isfile(mp):
+            continue
+        text = open(mp, encoding="utf-8").read()
+        m = re.search(r"(?m)^updated:\s*(\S+)", text)
+        upd = m.group(1) if m else ""
+        body = re.sub(r"\A---\n.*?\n---\n?", "", text, flags=re.S).strip()
+        facts = len([l for l in body.splitlines() if l.strip()])
+        newer = upd > last
+        rows.append(f"- `{d}`: MEMORY.md {facts} line(s), {len(body)} chars, updated {upd or '?'}; "
+                    f"last approved change {last or 'none'}"
+                    + ("; **lessons newer than the references: promote the settled ones (step 2b)**" if newer and facts else ""))
+    return H + (rows or ["No skill keeps a MEMORY.md yet."])
 
 
 def main():
@@ -257,6 +292,7 @@ def main():
           f"- Stale backlog: {st.get('#stale', 0)} ({100 * st.get('#stale', 0) / max(len(notes), 1):.0f}%).",
           f"- Processed-but-unlinked sources: {len(unlinked)} (findable via the `sources` view)."]
     H += usage_section(notes, cfg, st.get('#flagged', 0))
+    H += skills_section(cfg)
     H += ["", "## Folders awaiting a decision (generated)", ""]
     if pending:
         H.append("Folders no scope rule has ruled on, at any depth (the highest one with no rule inside it). Each needs one answer at VERIFY step 1, "

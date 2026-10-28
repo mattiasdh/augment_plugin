@@ -38,7 +38,10 @@ export class FakeRepo implements Repo {
 
   async commit(changes: Change[], message: string, expectedHead: string): Promise<"ok" | "conflict"> {
     if (expectedHead !== this.headOid) return "conflict";
-    for (const c of changes) { this.files.set(c.path, { sha: this.sha(), text: c.text }); this.touched.set(c.path, message); }
+    for (const c of changes) {
+      if (c.text === null) { this.files.delete(c.path); continue; }
+      this.files.set(c.path, { sha: this.sha(), text: c.text }); this.touched.set(c.path, message);
+    }
     this.commits.push(message);
     this.bump();
     return "ok";

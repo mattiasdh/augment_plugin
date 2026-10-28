@@ -75,18 +75,18 @@ def check_secret(*texts):
 def check_body(body):
     if body is not None and len(body.strip()) > M.BODY_MAX:
         fail(f"the body is {len(body.strip())} characters; {M.BODY_MAX} at most. A memory this long is a skill's "
-             "reference (notes/<skills root>/<skill>/references, proposed as an edit there) or a note (offer it); "
+             "reference (<skills root>/<skill>/references, proposed as an edit there, or the skill's MEMORY.md) or a note (offer it); "
              "keep the card to the lesson and a pointer.")
 
 
-def card_path(root, slug):
-    return os.path.join(root, M.CARD_DIR, slug + ".md")
+def card_path(root, slug, type_=None):
+    return M.card_path(root, slug, type_)
 
 
 def read(root, slug):
     p = card_path(root, slug)
     if not os.path.isfile(p):
-        fail(f"no card {slug} (augment_memory/card/{slug}.md)")
+        fail(f"no card {slug} (augment_memory/card/<type>/{slug}.md)")
     fm, body = M.split_note(open(p, encoding="utf-8").read())
     return p, fm, body
 
@@ -95,7 +95,10 @@ def write(p, fm, body):
     os.makedirs(os.path.dirname(p), exist_ok=True)
     with open(p, "w", encoding="utf-8", newline="\n") as f:
         f.write(M.render(fm, body))
-    M.write_index(os.path.dirname(os.path.dirname(os.path.dirname(p))))
+    root = os.path.dirname(p)
+    while not os.path.isdir(os.path.join(root, M.DIR)) and os.path.dirname(root) != root:
+        root = os.path.dirname(root)
+    M.write_index(root)
 
 
 def split_list(v):
@@ -118,10 +121,11 @@ def cmd_add(root, a):
             fail(f"LIKELY SAME as active card {best[1]} ({best[0]:.2f}). Confirm it with `seen {best[1]}`, "
                  f"amend it with `update {best[1]}`, or pass --distinct if the two really differ.")
     slug = M.slugify(a.title)
-    if os.path.exists(card_path(root, slug)):
+    if slug in M.card_files(root):
         fail(f"a card named {slug} exists already; update it, or choose a title that says what differs")
-    write(card_path(root, slug), fm, body)
-    print(f"added augment_memory/card/{slug}.md ({a.type}, {', '.join(fm['scope'])})")
+    p = card_path(root, slug, a.type)
+    write(p, fm, body)
+    print(f"added {M.card_rel(p, root)} ({a.type}, {', '.join(fm['scope'])})")
 
 
 def cmd_seen(root, a):
@@ -147,14 +151,25 @@ def cmd_update(root, a):
     if a.keywords is not None:
         fm["keywords"] = split_list(a.keywords)
     fm["updated"] = M.stamp()
-    write(p, fm, body if new_body is None else new_body)
-    print(f"updated augment_memory/card/{a.slug}.md")
+    # A card lives in its type's folder, so a new type moves the file there.
+    dest = os.path.join(root, M.CARD_DIR, fm["type"], a.slug + ".md") if fm.get("type") in M.TYPES else p
+    write(dest, fm, body if new_body is None else new_body)
+    if os.path.abspath(dest) != os.path.abspath(p):
+        os.remove(p)
+        M.write_index(root)
+    print(f"updated {M.card_rel(dest, root)}")
 
 
 def cmd_supersede(root, a):
     if a.old == a.new:
         fail("a card cannot supersede itself")
-    read(root, a.new)
+    # The replacement is another card, or a skill's MEMORY.md when a skill's lessons
+    # moved into its own folder (reference/skills.md).
+    if a.new.endswith("/MEMORY.md"):
+        if not os.path.isfile(os.path.join(root, a.new)):
+            fail(f"no skill memory at {a.new}")
+    else:
+        read(root, a.new)
     p, fm, body = read(root, a.old)
     fm["status"], fm["superseded_by"], fm["updated"] = "superseded", a.new, M.stamp()
     write(p, fm, body)

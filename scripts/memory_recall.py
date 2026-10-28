@@ -84,8 +84,11 @@ def main():
                  "before working, follow them unless the person says otherwise, and name the card when it "
                  "changes what you do:"]
         here = M.dir_setting(os.environ.get("CLAUDE_PROJECT_DIR")) or os.getcwd()
-        where = "augment_memory/card/" if root == here else os.path.join(root, M.CARD_DIR) + "/"
-        lines += [f"- {where}{slug}.md: {fm.get('summary', '')}" for _, slug, fm in hits]
+        files = M.card_files(root)
+        def shown(slug):
+            p = files.get(slug, os.path.join(root, M.CARD_DIR, slug + ".md"))
+            return M.card_rel(p, root) if root == here else p
+        lines += [f"- {shown(slug)}: {fm.get('summary', '')}" for _, slug, fm in hits]
         print(json.dumps({"hookSpecificOutput": {"hookEventName": "UserPromptSubmit",
                                                  "additionalContext": "\n".join(lines)}}))
         return

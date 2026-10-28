@@ -9,7 +9,8 @@
 
 export interface RepoFile { path: string; sha: string; text: string }
 export interface Entry { name: string; path: string; type: "file" | "dir"; sha: string }
-export interface Change { path: string; text: string }
+/** A file to write, or with `text: null` to delete (a card moving to its type folder). */
+export interface Change { path: string; text: string | null }
 export interface Head { oid: string; date: string }
 
 /** What the tools need from a repository. The tests supply an in-memory one. */
@@ -140,7 +141,10 @@ export class GitHubRepo implements Repo {
           branch: { repositoryNameWithOwner: `${this.owner}/${this.name}`, branchName: this.branch },
           message: { headline, body: rest.join("\n").trim() || undefined },
           expectedHeadOid: expectedHead,
-          fileChanges: { additions: changes.map((c) => ({ path: c.path, contents: b64encode(c.text) })) },
+          fileChanges: {
+            additions: changes.filter((c) => c.text !== null).map((c) => ({ path: c.path, contents: b64encode(c.text as string) })),
+            deletions: changes.filter((c) => c.text === null).map((c) => ({ path: c.path })),
+          },
         } });
       return "ok";
     } catch (e) {
@@ -150,6 +154,10 @@ export class GitHubRepo implements Repo {
       if ((await this.head()).oid !== expectedHead) return "conflict";
       for (const c of changes) {
         const cur = await this.read(c.path);
+        if (c.text === null) {
+          if (cur && !(await this.remove(c.path, message, cur.sha))) return "conflict";
+          continue;
+        }
         const r = await this.write(c.path, c.text, message, cur?.sha);
         if (r !== "ok") return "conflict";
       }
@@ -174,6 +182,16 @@ export class GitHubRepo implements Repo {
       .filter((e) => e.type === "blob" && e.name.endsWith(".md") && e.object?.text != null)
       .map((e) => ({ path: `${dir}/${e.name}`, sha: e.oid, text: e.object!.text as string }))
       .sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+  }
+
+  /** Delete one file against the blob it read; only the commit fallback uses it. */
+  private async remove(path: string, message: string, sha: string): Promise<boolean> {
+    const r = await fetch(`${API}/repos/${this.owner}/${this.name}/contents/${encodePath(path)}`, {
+      method: "DELETE",
+      headers: { ...this.headers(), "Content-Type": "application/json" },
+      body: JSON.stringify({ message, sha, branch: this.branch }),
+    });
+    return r.ok;
   }
 
   async write(path: string, text: string, message: string, sha?: string): Promise<"ok" | "exists" | "conflict"> {

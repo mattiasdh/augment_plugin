@@ -11,7 +11,7 @@
  */
 import type { Change, Repo } from "./github";
 import { Refused } from "./memory";
-import { loadConfig, type Config } from "./vault";
+import { loadConfig, skillsRoot, type Config } from "./vault";
 
 /** The slice of Workers KV this needs; the tests supply an in-memory one. */
 export interface UsageStore {
@@ -26,11 +26,16 @@ const KEEP_S = 60 * 24 * 3600;   // an event not flushed in sixty days lapses ra
 const WIKI_DIRS = ["concept", "entity", "theme", "tension", "hub"];
 export const PENDING = "augment_wiki/usage.pending";
 
-/** A wiki note or memory card path, which is all usage tracks. */
-export function tracked(path: string): boolean {
+/**
+ * A wiki note, a memory card (in its type folder, or flat before 2026-10-28), or a
+ * skill's MEMORY.md under the declared skills root: all that usage tracks.
+ */
+export function tracked(path: string, skillsRoot = ""): boolean {
   const p = path.split("/");
-  return p.length === 3 && p[2].endsWith(".md") &&
-    ((p[0] === "augment_wiki" && WIKI_DIRS.includes(p[1])) || (p[0] === "augment_memory" && p[1] === "card"));
+  if (!p[p.length - 1].endsWith(".md")) return false;
+  if (p.length === 3 && p[0] === "augment_wiki" && WIKI_DIRS.includes(p[1])) return true;
+  if (p[0] === "augment_memory" && p[1] === "card" && (p.length === 3 || p.length === 4)) return true;
+  return !!skillsRoot && p.length === skillsRoot.split("/").length + 2 && path.startsWith(skillsRoot + "/") && p[p.length - 1] === "MEMORY.md";
 }
 
 export function enabled(config: Config): boolean {
@@ -41,12 +46,13 @@ const line = (kind: string, id: string, op: string, at: string) =>
   JSON.stringify({ at, kind, id, op, surface: "connector", session: "connector" });
 
 /** Record an open; never fails the read it accompanies. */
-export async function recordOpen(store: UsageStore | undefined, repo: Repo, id: string, op: string, at: string): Promise<void> {
-  if (!store || !tracked(id)) return;
+export async function recordOpen(store: UsageStore | undefined, repo: Repo, id: string, op: string, at: string, kind: "open" | "apply" = "open"): Promise<void> {
+  if (!store) return;
   try {
-    if (!enabled(await loadConfig(repo))) return;
+    const config = await loadConfig(repo);
+    if (!tracked(id, skillsRoot(config)) || !enabled(config)) return;
     const key = `${PREFIX}${at.replace(/[^0-9]/g, "")}-${Math.random().toString(36).slice(2, 10)}`;
-    await store.put(key, line("open", id, op, at), { expirationTtl: KEEP_S });
+    await store.put(key, line(kind, id, op, at), { expirationTtl: KEEP_S });
   } catch { /* usage never stands in the way of reading */ }
 }
 
@@ -98,10 +104,11 @@ export async function cite(store: UsageStore | undefined, repo: Repo, a: { ids: 
   const kind = a.kind === "apply" ? "apply" : "cite";
   const raw = Array.isArray(a.ids) ? a.ids.map(String) : typeof a.ids === "string" ? [a.ids] : [];
   const ids = raw.map((s) => s.trim().replace(/^\/+/, "")).filter(Boolean);
-  const bad = ids.filter((i) => !tracked(i));
+  const sr = skillsRoot(await loadConfig(repo));
+  const bad = ids.filter((i) => !tracked(i, sr));
   if (!ids.length) throw new Refused("ids must list the wiki notes cited or the cards applied, as paths");
   if (bad.length) throw new Refused(`not a wiki note or memory card path: ${bad.join(", ")}`);
-  if (kind === "apply" && ids.some((i) => !i.startsWith("augment_memory/"))) throw new Refused("apply is for memory cards; a wiki note is cited");
+  if (kind === "apply" && ids.some((i) => !i.startsWith("augment_memory/") && !i.endsWith("/MEMORY.md"))) throw new Refused("apply is for memory cards and skill memories; a wiki note is cited");
   if (!enabled(await loadConfig(repo))) return "usage recording is off in config.yaml; nothing recorded";
   const op = String(a.op ?? (kind === "apply" ? "recall" : "answer"));
   const n = await flush(store, repo, now, by, [...new Set(ids)].map((i) => line(kind, i, op, now)));

@@ -97,7 +97,7 @@ describe("memory", () => {
 
   it("adds a card, then refuses a near-duplicate and names it", async () => {
     await m.add({ type: "tool", title: "Obsidian REST patch rewrites the whole file", summary: "vault_patch rewrites the file; use source_write.py for sources.", keywords: "obsidian,rest" });
-    expect(repo.files.has("augment_memory/card/obsidian-rest-patch-rewrites-the-whole-file.md")).toBe(true);
+    expect(repo.files.has("augment_memory/card/tool/obsidian-rest-patch-rewrites-the-whole-file.md")).toBe(true);
     await expect(m.add({ type: "tool", title: "Obsidian REST patch rewrites whole file", summary: "vault_patch rewrites the file", keywords: ["obsidian", "rest"] }))
       .rejects.toThrow(/LIKELY SAME as active card obsidian-rest-patch-rewrites-the-whole-file/);
     expect(repo.commits[0]).toMatch(/^MEMORY: add obsidian-rest-patch-rewrites-the-whole-file\n\nAssisted-by: augment\/connector/);
@@ -114,14 +114,33 @@ describe("memory", () => {
     await m.add({ type: "preference", title: "Deliverable file naming", summary: "YYMMDD_project_subject.pdf" });
     expect(await m.seen("deliverable-file-naming")).toBe("deliverable-file-naming: seen 2");
     await m.update("deliverable-file-naming", { summary: "Date first: YYMMDD_project_subject.pdf", scope: "memos" });
-    const text = (await repo.read("augment_memory/card/deliverable-file-naming.md"))!.text;
+    const text = (await repo.read("augment_memory/card/preference/deliverable-file-naming.md"))!.text;
     expect(text).toContain('summary: "Date first: YYMMDD_project_subject.pdf"');
     expect(text).toContain("scope: memos");
     expect(text).toContain("seen: 2");
     await m.add({ type: "preference", title: "Folder naming for exports", summary: "Exports go in a dated folder" });
     await m.supersede("deliverable-file-naming", "folder-naming-for-exports");
-    expect((await repo.read("augment_memory/card/deliverable-file-naming.md"))!.text).toContain("status: superseded\nsuperseded_by: folder-naming-for-exports");
+    expect((await repo.read("augment_memory/card/preference/deliverable-file-naming.md"))!.text).toContain("status: superseded\nsuperseded_by: folder-naming-for-exports");
     await expect(m.seen("../../notes/x")).rejects.toThrow(/not a card slug/);
+  });
+
+  it("reads flat cards from an unmigrated vault, and moves a card to its type folder on a retype", async () => {
+    const flat = "---\ntype: tool\ntitle: \"Old flat card\"\nsummary: \"Written before type folders\"\nstatus: active\nscope: global\nseen: 1\ncreated: 2026-09-01 10:00\nupdated: 2026-09-01 10:00\nby: augment/claude-code\n---\nBody.\n";
+    repo.files.set("augment_memory/card/old-flat-card.md", { sha: "s1", text: flat });
+    expect(await m.get("old-flat-card")).toContain("Old flat card");
+    expect(await m.search("flat card")).toContain("old-flat-card");
+    await m.update("old-flat-card", { type: "snippet" });
+    expect(repo.files.has("augment_memory/card/old-flat-card.md")).toBe(false);
+    expect(repo.files.get("augment_memory/card/snippet/old-flat-card.md")!.text).toContain("type: snippet");
+    await m.update("old-flat-card", { summary: "Still a snippet" });
+    expect(repo.files.has("augment_memory/card/snippet/old-flat-card.md")).toBe(true);
+  });
+
+  it("supersedes a card by a skill's MEMORY.md", async () => {
+    await m.add({ type: "procedure", title: "Skill lessons for the drawing tool", summary: "How the drawing skill behaves" });
+    await expect(m.supersede("skill-lessons-for-the-drawing-tool", "augment_skills/drawing/MEMORY.md")).rejects.toThrow(/no skill memory/);
+    repo.files.set("augment_skills/drawing/MEMORY.md", { sha: "s2", text: "---\nskill: drawing\n---\nLessons.\n" });
+    expect(await m.supersede("skill-lessons-for-the-drawing-tool", "augment_skills/drawing/MEMORY.md")).toContain("superseded by augment_skills/drawing/MEMORY.md");
   });
 
   it("loads project cards first, then global, then cards scoped elsewhere, and searches", async () => {

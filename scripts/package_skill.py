@@ -11,7 +11,8 @@ then rebuild.
 The build is deterministic: entries sorted, timestamps fixed, and a stamp line
 added to the packaged SKILL.md naming the last CHANGELOG date and a hash of the
 content, so a rebuild of unchanged files is byte-identical and writes nothing.
-Left out of the package: `dist/`, CHANGELOG.md, README.md, dotfiles and any
+Left out of the package: `dist/`, CHANGELOG.md, README.md, MEMORY.md (the skill's
+live lessons, read from the vault at Preflight, never a snapshot), dotfiles and any
 `_`-prefixed folder (`_archive/`, for superseded versions kept for the record).
 A folder under the root that carries `.claude-plugin/` is a plugin's review copy,
 not a skill, and the checks pass over it.
@@ -25,7 +26,7 @@ import argparse, hashlib, io, os, re, sys, zipfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _gen_util import skills_root, split_note
 
-LEFT_OUT = {"CHANGELOG.md", "README.md"}
+LEFT_OUT = {"CHANGELOG.md", "README.md", "MEMORY.md"}   # MEMORY.md is live state, read from the vault
 EPOCH = (1980, 1, 1, 0, 0, 0)
 
 
@@ -117,6 +118,9 @@ def check(root):
         for ref in sorted(set(re.findall(r"(?<![\w/:])references/[\w.+\-]+(?: [\w.+\-]+)*?\.md\b", body))):
             if not os.path.isfile(os.path.join(d, ref)):
                 issues.append(f"skills: {rel}/SKILL.md names {ref}, which does not exist")
+        if os.path.isfile(os.path.join(d, "MEMORY.md")) and "MEMORY.md" not in body:
+            issues.append(f"skills: {rel} keeps a MEMORY.md but its SKILL.md never reads it; add the memory block "
+                          "(reference/skills.md) so every run starts from what earlier runs learned")
         dp = dist_path(name, d)
         if os.path.isfile(dp) and open(dp, "rb").read() != build(name, d):
             issues.append(f"skills: {rel}/dist/{name}.skill is behind its live files; "

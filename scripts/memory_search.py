@@ -24,7 +24,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("vault")
     ap.add_argument("query", nargs="+")
-    ap.add_argument("--type", choices=M.TYPES)
+    ap.add_argument("--type", choices=M.TYPES + ("skill",))
     ap.add_argument("--scope")
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--limit", type=int, default=10)
@@ -35,7 +35,19 @@ def main():
         print("REFUSED: no searchable words in the query")
         sys.exit(1)
     hits = []
+    files = M.card_files(root)
+    # A skill's own MEMORY.md is searched beside the cards, typed `skill`.
+    if not a.type or a.type == "skill":
+        for skill, fm, body, path in M.skill_memories(root):
+            first = next((l.strip() for l in body.splitlines() if l.strip()), "")
+            pseudo = {"type": "skill", "title": skill, "summary": first[:160], "keywords": [skill], "scope": ["global"],
+                      "seen": fm.get("seen", 1), "status": "active"}
+            s = score(q, pseudo, body)
+            if s:
+                hits.append((s, M.seen_of(pseudo), skill, dict(pseudo, _path=M.card_rel(path, root))))
     for slug, fm, body in M.load_cards(root):
+        if a.type == "skill":
+            break
         status = fm.get("status", "active")
         if not a.all and status != "active":
             continue
@@ -54,7 +66,8 @@ def main():
         flag = "" if fm.get("status", "active") == "active" else f" {fm.get('status').upper()}"
         if fm.get("superseded_by"):
             flag += f" -> {fm['superseded_by']}"
-        print(f"{s:>3}  augment_memory/card/{slug}.md  [{fm.get('type')}, {', '.join(M.scopes(fm))}]{flag}  "
+        where = fm.get("_path") or M.card_rel(files.get(slug, os.path.join(root, M.CARD_DIR, slug + ".md")), root)
+        print(f"{s:>3}  {where}  [{fm.get('type')}, {', '.join(M.scopes(fm))}]{flag}  "
               f"{fm.get('summary', '')}")
     if len(hits) > a.limit:
         print(f"... {len(hits) - a.limit} more; narrow the query or raise --limit")

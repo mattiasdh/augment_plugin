@@ -29,6 +29,9 @@ import argparse, collections, datetime, os, subprocess, sys
 import _memory as M
 
 
+ROOT_FOR_CHECK = [""]
+
+
 def defects(slug, fm, body, slugs):
     out = []
     if fm.get("type") not in M.TYPES:
@@ -44,7 +47,8 @@ def defects(slug, fm, body, slugs):
         out.append(f"body over {M.BODY_MAX} characters: a skill reference or a note, not a card")
     if len(str(fm.get("title", "")).split()) > M.TITLE_WORDS:
         out.append(f"title over {M.TITLE_WORDS} words")
-    if fm.get("status") == "superseded" and fm.get("superseded_by") not in slugs:
+    if fm.get("status") == "superseded" and fm.get("superseded_by") not in slugs and not (
+            str(fm.get("superseded_by", "")).endswith("/MEMORY.md") and os.path.isfile(os.path.join(ROOT_FOR_CHECK[0], str(fm["superseded_by"])))):
         out.append(f"superseded_by {fm.get('superseded_by')!r} names no card")
     hit = M.secret_in(" ".join([str(fm.get("title", "")), str(fm.get("summary", "")), body]))
     if hit:
@@ -69,6 +73,7 @@ def main():
     ap.add_argument("--check", action="store_true")
     a = ap.parse_args()
     root = os.path.abspath(a.vault)
+    ROOT_FOR_CHECK[0] = root
     cfg = M.settings(root)
     cards = M.load_cards(root)
     slugs = {s for s, _, _ in cards}

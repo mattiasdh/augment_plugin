@@ -17,9 +17,13 @@ Memory is a staging area with two exits rather than a final store. Content found
 VAULT/
 └── augment_memory/          written by the model, never compiled into the wiki
     ├── index.md             generated, one line per active card, capped
-    ├── card/<slug>.md       one memory per file
+    ├── card/<type>/<slug>.md  one memory per file, in its type's folder (preference, procedure, tool, snippet)
     └── offers/<slug>.md     content found while working, waiting for the source layer
 ```
+
+**A card lives in its type's folder**, so the folder reads as an overview; a type change moves the file, and a `[[slug]]` link keeps resolving, since Obsidian links by name. The readers still accept a flat `card/<slug>.md`, the layout before 2026-10-28, which `migrate_cards.py` moves once.
+
+**A skill's lessons are not cards.** What a skill learns from use goes to that skill's own `MEMORY.md` beside its references (`reference/skills.md`), read at the skill's Preflight and rewritten at the end of a run, so it reaches every surface without being lost among the cards.
 
 **There is no ledger.** Memory is not compiled from anything, so there is no staleness to trace by hash and nothing to rebuild; git history is the audit trail. `index.md` is a separate generated file and never mixed with `augment_wiki/index.jsonl`. The folder is structural, like `augment_wiki/`: never a source, never counted by scope, never read by a compiling operation.
 

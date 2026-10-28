@@ -8,13 +8,14 @@ import { Memory, Refused, TYPES, settingsFrom } from "./memory";
 import * as vault from "./vault";
 import * as w from "./write";
 import * as usage from "./usage";
+import * as skillmem from "./skillmem";
 
 export const VERSION = "0.1.0";
 const PROTOCOLS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"];
 
 const INSTRUCTIONS = `The augment vault and its memory, over GitHub. Start a conversation with activate, which reports the commit read and loads the memory cards that apply.
 Before a task that names a tool, a file format, a client convention or a skill, call memory_search for it and open the cards that match with memory_get; apply them without asking, and name the card when it changes what you do.
-A skill whose references live in the vault (under the skills root that config.yaml declares) reads them with vault_read on every use. A change to such a skill's rules, as the person's feedback on its output, is never a memory card: propose it, and park it with memory_offer kind correction and target the reference file's path; the weekly sweep applies it with the person.
+A skill whose references live in the vault (under the skills root that config.yaml declares) reads them with vault_read on every use, and reads its own lessons with skill_memory_get at the start of a run and rewrites them with skill_memory_update at the end. A change to such a skill's rules, as the person's feedback on its output, is never a memory card: propose it, and park it with memory_offer kind correction and target the reference file's path; the weekly sweep applies it with the person.
 Memory (memory_*) records how the work is done: how a tool, connector or MCP server really behaves, the person's file and output conventions, reusable snippets, working procedures. Test before writing: would this still matter if Claude were not involved? If yes it is content, not memory: offer it with capture_note (or memory_offer when the person is not there to confirm). Never store secrets, anyone else's personal data, or raw text copied from a page or file.
 Memory is never evidence about projects, clients or the domain; vault_search and vault_read are, and the wiki notes cite their sources. Reads see the last push to GitHub, not unsynced edits in Obsidian.
 Writes follow the same rules as every other surface (the plugin's rules/surfaces.md, Connector column): sources are append-only (source_callout, source_set), memory goes through memory_*, nothing is deleted or moved, closed folders stay closed. After an answer or a discussion, record the notes it cited with usage_cite (and after recall, the cards applied); opens are recorded by vault_read and memory_get themselves. What needs the plugin's scripts (process, mint, dream, the sweep's checks) cannot run here: say so, and point to a Claude Code session on the vault, which runs them in full from the Claude app too.`;
@@ -55,10 +56,14 @@ export const TOOLS: Tool[] = [
     name: "memory_search",
     description: "Search the memory cards by the words that matter (tool, format, operation). Returns one line per card, best first. Use before working with a tool, connector or format a past session may have learned about.",
     inputSchema: { type: "object", required: ["query"], properties: {
-      query: str("Words to look for."), type: { type: "string", enum: [...TYPES] }, scope: str("A project name; global cards are always included."),
+      query: str("Words to look for."), type: { type: "string", enum: [...TYPES, "skill"], description: "skill: only the skills' own memories." }, scope: str("A project name; global cards are always included."),
       include_inactive: { type: "boolean", description: "Include superseded and archived cards." } } },
     async run(a, ctx) {
-      return (await memory(ctx)).search(String(a.query ?? ""), { type: s(a.type), scope: s(a.scope), all: !!a.include_inactive });
+      const query = String(a.query ?? "");
+      const cards = a.type === "skill" ? "" : await (await memory(ctx)).search(query, { type: s(a.type), scope: s(a.scope), all: !!a.include_inactive });
+      const skills = !a.type || a.type === "skill" ? await skillmem.search(ctx.repo, query) : [];
+      if (!skills.length) return cards || "no skill memory matches";
+      return [cards, "Skill memories (read with skill_memory_get):", ...skills].filter(Boolean).join("\n");
     },
   },
   {
@@ -67,8 +72,10 @@ export const TOOLS: Tool[] = [
     inputSchema: { type: "object", required: ["slug"], properties: { slug: str("The card's slug, as memory_search or activate lists it.") } },
     async run(a, ctx) {
       const slug = String(a.slug ?? "");
-      const text = await (await memory(ctx)).get(slug);
-      await usage.recordOpen(ctx.kv, ctx.repo, `augment_memory/card/${slug}.md`, "memory_get", ctx.now());
+      const m = await memory(ctx);
+      const text = await m.get(slug);
+      const path = await m.pathOf(slug);
+      if (path) await usage.recordOpen(ctx.kv, ctx.repo, path, "memory_get", ctx.now());
       return text;
     },
   },
@@ -119,6 +126,20 @@ export const TOOLS: Tool[] = [
       kind: { type: "string", enum: ["capture", "comment", "correction"], description: "Default capture." },
       target: str("For a comment or correction: the path of the note it concerns.") } },
     async run(a, ctx) { return (await memory(ctx)).offer({ title: String(a.title ?? ""), body: String(a.body ?? ""), kind: s(a.kind), target: s(a.target) }); },
+  },
+  {
+    name: "skill_memory_get",
+    description: "At the start of a skill's run (its Preflight), read that skill's own memory: the lessons earlier runs learned about doing its work (tool behaviour, version gaps, errors and workarounds, the person's conventions for its output). Kept in the vault beside the skill's references, so it reaches every surface whether or not the skill is loaded. Apply it; where it is newer than the skill's references, it wins until the weekly sweep reconciles them.",
+    inputSchema: { type: "object", required: ["skill"], properties: { skill: str("The skill's folder name, as its SKILL.md names it, e.g. archicad-tapir-ifc.") } },
+    async run(a, ctx) { return skillmem.get(ctx.repo, String(a.skill ?? ""), { kv: ctx.kv, now: ctx.now() }); },
+  },
+  {
+    name: "skill_memory_update",
+    description: "At the end of a skill's run, if something new was learned about doing its work, rewrite that skill's memory: body replaces the lessons with the current set (short facts, no logs, no project or domain facts, no secrets, 3000 characters at most). seen confirms the memory proved right. Project facts go to capture_note instead. If nothing was learned, call it with seen only, or not at all.",
+    inputSchema: { type: "object", required: ["skill"], properties: {
+      skill: str("The skill's folder name."), body: str("The full current lessons, replacing what is there."),
+      seen: { type: "boolean", description: "The memory proved right in this run." } } },
+    async run(a, ctx) { return skillmem.update(ctx.repo, { skill: String(a.skill ?? ""), body: s(a.body), seen: !!a.seen }, ctx.now(), ctx.by, ctx.kv); },
   },
   {
     name: "vault_search",

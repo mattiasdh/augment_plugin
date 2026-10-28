@@ -12,8 +12,10 @@ What goes wrong without it is drift. A skill uploaded to claude.ai cannot be edi
 
 ```yaml
 skills:
-  root: notes/30_ASSETS/skills
+  root: augment_skills
 ```
+
+The root is a top-level folder beside `augment_wiki/` and `augment_memory/`, listed under `scope: ignore` so it is never counted as an undeclared source. Older vaults kept it under `notes/`; any path works, since every reader takes it from this line.
 
 One folder per skill, named as its SKILL.md names it:
 
@@ -22,12 +24,32 @@ One folder per skill, named as its SKILL.md names it:
   SKILL.md        the thin skill: workflow, checks, and where its references live
   references/     the rules, read live on every use; they evolve with the person's feedback
   CHANGELOG.md    one dated line per approved rule change
+  MEMORY.md       the skill's own lessons from use: current facts, read at Preflight, rewritten at the end of a run
   dist/<skill>.skill   the upload package, built by package_skill.py, never edited
   _archive/       superseded versions kept for the record; never packaged
   README.md       optional; a third-party skill says so here and is not edited
 ```
 
-A folder carrying `.claude-plugin/` is a plugin's review copy, not a skill, and the checks pass over it.
+A folder carrying `.claude-plugin/` is a plugin's review copy, not a skill, and the checks pass over it; keep such copies under `<root>/_plugins/`. A third-party skill kept as a read-only copy says so in its README and is replaced, never edited.
+
+## The skill's memory
+
+**Every skill that learns from use keeps one `MEMORY.md`, and every run starts from it.** It holds how the skill's work is done, learned in use: a tool's real behaviour, a version gap, an error and its workaround, a cost, a convention the person set for this skill's output. Never project or domain facts (those go to the notes) and never secrets; 3000 characters at most, current facts only, replaced rather than appended to, since the commit history keeps the past. It is not a second rulebook: the weekly sweep promotes the settled lessons into `references/` with the person's approval and trims the file, so the rules stay in one place.
+
+The block every learning skill carries in its SKILL.md, near the top of its procedure:
+
+```markdown
+## Memory
+Preflight: read this skill's MEMORY.md from the vault (`skill_memory.py <vault> get <skill>`,
+or `skill_memory_get` through the augment connector) and apply it. Where it is newer than a
+reference, it wins until the sweep reconciles them.
+End of run: if this run learned something about doing the work, rewrite MEMORY.md with the
+current lessons (`skill_memory.py <vault> set <skill> --body-file F`, or `skill_memory_update`);
+if it only proved right, mark it seen. With no vault reachable, list the lessons in the reply
+so the person can pass them on.
+```
+
+`package_skill.py --check` flags a skill whose MEMORY.md its SKILL.md never reads. MEMORY.md is never packaged: the upload carries the rules, and the lessons are read live.
 
 ## Reading the references
 
@@ -42,7 +64,7 @@ Feedback that changes a rule is proposed as the exact lines to add, change or re
 - **With the vault on disk**: apply the edit, add the dated line to CHANGELOG.md, run `package_skill.py <vault> <skill>`, and tell the person to upload the new package.
 - **Through the connector**: `vault_edit` replaces the one passage and logs the `changelog` line in the same commit; the nightly cycle rebuilds the package.
 - **When the person is not there to approve**: park it with `memory_offer` (or `memory_write.py offer`), kind `correction`, target the reference file. The sweep applies it with the person.
-- **Never as a memory card.** Only Claude's own recurring slips in running a skill are memory, as a card scoped to the skill's name.
+- **Never as a memory card.** Claude's own lessons in running a skill go to its `MEMORY.md`, which the sweep promotes into the references.
 
 ## Checks
 

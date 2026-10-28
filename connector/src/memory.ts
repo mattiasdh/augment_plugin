@@ -6,7 +6,7 @@
  * the two to each other.
  */
 import { parse as parseYaml } from "yaml";
-import type { Repo, RepoFile } from "./github";
+import type { Change, Repo, RepoFile } from "./github";
 
 export const DIR = "augment_memory";
 export const CARD_DIR = `${DIR}/card`;
@@ -42,7 +42,12 @@ const SECRET: RegExp[] = [
 export class Refused extends Error {}
 
 export type Front = Record<string, unknown>;
-export interface Card { slug: string; sha: string; fm: Front; body: string }
+export interface Card { slug: string; sha: string; fm: Front; body: string; path?: string }
+
+/** Where a card of `type` lives: its type folder, as `_memory.card_path` places it. */
+export function cardPath(slug: string, type: unknown): string {
+  return (TYPES as readonly string[]).includes(String(type)) ? `${CARD_DIR}/${type}/${slug}.md` : `${CARD_DIR}/${slug}.md`;
+}
 
 // ---- the card model, as in _memory.py ----
 
@@ -173,7 +178,7 @@ export function settingsFrom(config: Record<string, unknown>): MemorySettings {
 
 function toCard(f: RepoFile): Card {
   const [fm, body] = splitNote(f.text);
-  return { slug: f.path.split("/").pop()!.replace(/\.md$/, ""), sha: f.sha, fm, body };
+  return { slug: f.path.split("/").pop()!.replace(/\.md$/, ""), sha: f.sha, fm, body, path: f.path };
 }
 
 function isActive(c: Card): boolean { return String(c.fm.status ?? "active") === "active"; }
@@ -219,8 +224,16 @@ function splitCsv(v: string | string[] | undefined): string[] {
 export class Memory {
   constructor(private repo: Repo, private settings: MemorySettings, private now: () => string, private by: string) {}
 
+  /**
+   * Every card, from its type folder (`card/<type>/<slug>.md`) or, for a vault not yet
+   * migrated, flat in `card/`; where both exist the type folder wins, as in
+   * `_memory.card_files`. Five one-level reads, well inside a Worker's request budget.
+   */
   async cards(): Promise<Card[]> {
-    return (await this.repo.readDir(CARD_DIR)).map(toCard);
+    const lists = await Promise.all([CARD_DIR, ...TYPES.map((t) => `${CARD_DIR}/${t}`)].map((d) => this.repo.readDir(d)));
+    const bySlug = new Map<string, Card>();
+    for (const f of lists.flat()) bySlug.set(f.path.split("/").pop()!.replace(/\.md$/, ""), toCard(f));
+    return [...bySlug.values()].sort((a, b) => (a.slug < b.slug ? -1 : a.slug > b.slug ? 1 : 0));
   }
 
   private guard() {
@@ -277,9 +290,16 @@ export class Memory {
 
   async get(slug: string): Promise<string> {
     checkSlug(slug);
-    const f = await this.repo.read(`${CARD_DIR}/${slug}.md`);
+    const c = (await this.cards()).find((x) => x.slug === slug);
+    if (!c?.path) throw new Refused(`no card ${slug}`);
+    const f = await this.repo.read(c.path);
     if (!f) throw new Refused(`no card ${slug}`);
     return f.text;
+  }
+
+  /** The path a card is at now, for usage; null when there is none. */
+  async pathOf(slug: string): Promise<string | null> {
+    return (await this.cards()).find((x) => x.slug === slug)?.path ?? null;
   }
 
   async add(a: { type: string; title: string; summary: string; scope?: string | string[]; keywords?: string | string[]; body?: string; distinct?: boolean }): Promise<string> {
@@ -307,16 +327,16 @@ export class Memory {
     if (cards.some((c) => c.slug === slug)) throw new Refused(`a card named ${slug} exists already; update it, or choose a title that says what differs`);
     const text = render(fm, body);
     const all = [...cards, { slug, sha: "", fm, body } as Card];
-    const r = await this.repo.commit([{ path: `${CARD_DIR}/${slug}.md`, text }, { path: INDEX, text: renderIndex(all, this.settings.index_cap) }],
+    const path = cardPath(slug, a.type);
+    const r = await this.repo.commit([{ path, text }, { path: INDEX, text: renderIndex(all, this.settings.index_cap) }],
       `MEMORY: add ${slug}\n\nAssisted-by: ${this.by}`, head);
     if (r !== "ok") throw new Refused(`the memory changed while this card was written; search again and retry`);
-    return `added ${CARD_DIR}/${slug}.md (${a.type}, ${(fm.scope as string[]).join(", ")})`;
+    return `added ${path} (${a.type}, ${(fm.scope as string[]).join(", ")})`;
   }
 
   private async edit(slug: string, change: (fm: Front, body: string) => [Front, string], verb: string): Promise<void> {
     this.guard();
     checkSlug(slug);
-    const path = `${CARD_DIR}/${slug}.md`;
     for (let attempt = 0; attempt < 2; attempt++) {
       const head = (await this.repo.head()).oid;
       const cards = await this.cards();
@@ -324,8 +344,12 @@ export class Memory {
       if (!c) throw new Refused(`no card ${slug}`);
       const [nfm, nbody] = change(c.fm, c.body);
       const all = cards.map((x) => (x.slug === slug ? { ...x, fm: nfm, body: nbody } : x));
-      const r = await this.repo.commit([{ path, text: render(nfm, nbody) }, { path: INDEX, text: renderIndex(all, this.settings.index_cap) }],
-        `MEMORY: ${verb} ${slug}\n\nAssisted-by: ${this.by}`, head);
+      // A card lives in its type's folder, so a new type (or a flat card) moves it there.
+      const from = c.path ?? cardPath(slug, c.fm.type);
+      const to = cardPath(slug, nfm.type);
+      const changes: Change[] = [{ path: to, text: render(nfm, nbody) }, { path: INDEX, text: renderIndex(all, this.settings.index_cap) }];
+      if (from !== to) changes.push({ path: from, text: null });
+      const r = await this.repo.commit(changes, `MEMORY: ${verb} ${slug}\n\nAssisted-by: ${this.by}`, head);
       if (r === "ok") return;
     }
     throw new Refused(`${slug} kept changing underneath this write; try again`);
@@ -349,13 +373,19 @@ export class Memory {
       n.updated = this.now();
       return [n, a.body === undefined ? body : a.body];
     }, "update");
-    return `updated ${CARD_DIR}/${slug}.md`;
+    return `updated ${await this.pathOf(slug) ?? cardPath(slug, a.type)}`;
   }
 
   async supersede(oldSlug: string, newSlug: string): Promise<string> {
     if (oldSlug === newSlug) throw new Refused("a card cannot supersede itself");
-    checkSlug(newSlug);
-    if (!(await this.repo.read(`${CARD_DIR}/${newSlug}.md`))) throw new Refused(`no card ${newSlug}`);
+    // The replacement is another card, or a skill's MEMORY.md when a skill's lessons moved
+    // into its own folder (the plugin's reference/skills.md).
+    if (newSlug.endsWith("/MEMORY.md")) {
+      if (newSlug.split("/").length !== 3 || newSlug.includes("..") || !(await this.repo.read(newSlug))) throw new Refused(`no skill memory at ${newSlug}`);
+    } else {
+      checkSlug(newSlug);
+      if (!(await this.cards()).some((c) => c.slug === newSlug)) throw new Refused(`no card ${newSlug}`);
+    }
     await this.edit(oldSlug, (fm, body) => [{ ...fm, status: "superseded", superseded_by: newSlug, updated: this.now() }, body], "supersede");
     return `${oldSlug} superseded by ${newSlug}`;
   }

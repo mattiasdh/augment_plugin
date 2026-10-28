@@ -131,6 +131,7 @@ export async function write(repo: Repo, a: { path: string; content: string; chan
   const [where, why] = place(p, config);
   if (where === "memory") throw new Refused("augment_memory/ is written through the memory tools only (memory_add, memory_update, ...)");
   if (where === "closed") throw new Refused(`${p} ${why}`);
+  if (where === "skill" && p.endsWith("/MEMORY.md")) throw new Refused(`${p} is a skill's memory: it is written through skill_memory_update only`);
   const ref = referenceOf(p, config);
   if (ref && !a.changelog?.trim()) throw new Refused(`${p} is a skill's reference: an approved rule change carries its CHANGELOG line (changelog)`);
   let verb = "";
@@ -161,6 +162,7 @@ export async function edit(repo: Repo, a: { path: string; old: string; new: stri
   const p = mdPath(a.path);
   const config = await loadConfig(repo);
   const [where, why] = place(p, config);
+  if (where === "skill" && p.endsWith("/MEMORY.md")) throw new Refused(`${p} is a skill's memory: it is written through skill_memory_update only`);
   if (where !== "skill") {
     throw new Refused(where === "source" || where === "inbox" ? `${p} is a source, and sources are append-only: comment with source_callout` :
       where === "wiki" ? `${p} is a wiki note: hand edits are overwritten by the next build; correct it through its sources (write, correction mode)` :
