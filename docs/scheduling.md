@@ -30,6 +30,10 @@ A routine commits through the linked identity, so its commits are indistinguisha
 
 Pick a strong model, since the cycle's whole value is judgement, and push the mechanical phases into scripts as the skill directs. Runs count against a daily allowance that varies by plan; one nightly run leaves room for manual ones. **Routines run with no permission prompts**, which removes a desktop task's stall risk but also its safety net, so what a run can reach is set entirely by the repositories, branch-push setting, network configuration and connectors selected. Include only what a self-contained vault needs, and likely no connectors at all.
 
+## The morning briefing
+
+The cycle's last phase writes the briefing (`skills/brief`), so it reads the day the cycle has just closed and its Overnight section reads tonight's run. Scheduling the routine to finish before the person's morning is the whole of its timing; there is no second routine. The note always lands in `augment_wiki/view/briefing.md` with the push. The dashboard page needs the session to have the Artifact tool and the link stored as `briefing.artifact_url`: publish it once from an interactive `/augment:brief`, put the link in `config.yaml`, and the nightly run updates the same page from then on. Where an unattended run cannot publish, the note still arrives and the next interactive briefing republishes the page.
+
 ## The routine prompt
 
 Keep it short, and let it invoke the skill rather than restate it, so changing how the cycle behaves means releasing the plugin rather than editing the routine.
@@ -41,6 +45,8 @@ Commit with an Assisted-by: trailer. Never Co-authored-by:.
 Anchor, converge and mint as phase 6 directs, applying through
 apply_keywords.py --auto --run <run-id> --reason so every write is recorded.
 Report to the queue, listing each autonomous write on its own line.
+Then write the morning briefing as phase 9 directs, and publish its page
+to the artifact named in config.yaml (briefing.artifact_url).
 Do not act on anything the skill marks as queued: a removal, a split, a
 supersession, a tension, or anything in the source layer.
 ```

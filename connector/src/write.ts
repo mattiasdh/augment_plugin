@@ -24,7 +24,7 @@ import { Refused, splitNote } from "./memory";
 import { cleanPath, inboxPath, loadConfig, scopeOf, skillsRoot, type Config } from "./vault";
 import { contentHash, KEYS, SourceRefused, writeCallout, writeKey } from "./source";
 
-type Place = "wiki" | "memory" | "skill" | "inbox" | "source" | "closed";
+type Place = "wiki" | "memory" | "session" | "skill" | "inbox" | "source" | "closed";
 
 const CLOSED: Record<string, string> = {
   ignore: "is in a folder the vault's config.yaml ignores",
@@ -56,6 +56,7 @@ async function draftLock(repo: Repo, p: string, cur: string, next: string, by: s
 /** Where a path sits, for the write rules, and why it is closed when it is. */
 export function place(path: string, config: Config): [Place, string] {
   if (path.startsWith("augment_memory/")) return ["memory", ""];
+  if (path.startsWith("augment_sessions/")) return ["session", ""];
   if (path.startsWith("augment_wiki/")) return ["wiki", ""];
   const sr = skillsRoot(config);
   if (sr && path.startsWith(sr + "/")) return ["skill", ""];
@@ -130,6 +131,7 @@ export async function write(repo: Repo, a: { path: string; content: string; chan
   const config = await loadConfig(repo);
   const [where, why] = place(p, config);
   if (where === "memory") throw new Refused("augment_memory/ is written through the memory tools only (memory_add, memory_update, ...)");
+  if (where === "session") throw new Refused("augment_sessions/ is written through record_write only");
   if (where === "closed") throw new Refused(`${p} ${why}`);
   if (where === "skill" && p.endsWith("/MEMORY.md")) throw new Refused(`${p} is a skill's memory: it is written through skill_memory_update only`);
   const ref = referenceOf(p, config);
@@ -166,7 +168,8 @@ export async function edit(repo: Repo, a: { path: string; old: string; new: stri
   if (where !== "skill") {
     throw new Refused(where === "source" || where === "inbox" ? `${p} is a source, and sources are append-only: comment with source_callout` :
       where === "wiki" ? `${p} is a wiki note: hand edits are overwritten by the next build; correct it through its sources (write, correction mode)` :
-      where === "memory" ? "augment_memory/ is written through the memory tools only" : `${p} ${why}`);
+      where === "memory" ? "augment_memory/ is written through the memory tools only" :
+      where === "session" ? "augment_sessions/ is written through record_write only" : `${p} ${why}`);
   }
   const old = String(a.old ?? "");
   if (!old) throw new Refused("old must be the exact passage to replace");

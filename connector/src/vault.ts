@@ -133,7 +133,7 @@ export function skillsRoot(config: Config): string {
 export async function read(repo: Repo, path: string): Promise<string> {
   const p = cleanPath(path);
   if (!p.endsWith(".md")) throw new Refused("only markdown notes are readable through the connector");
-  let system = p.startsWith("augment_wiki/") || p.startsWith("augment_memory/");
+  let system = p.startsWith("augment_wiki/") || p.startsWith("augment_memory/") || p.startsWith("augment_sessions/");
   if (!system) {
     const root = skillsRoot(await loadConfig(repo));
     // A skill's own files are method, not knowledge: out of the wiki's scope, yet read on every use of the skill.

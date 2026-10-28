@@ -299,3 +299,32 @@ def write_if_changed(path, text):
             return False
     open(path, "w", encoding="utf-8").write(text)
     return True
+
+
+def context_of(p, rules, cfg):
+    """Stable, anchor-safe context name (no parentheses): note headings double as
+    link anchors, so project/concept notes back-link to their section with
+    `further_sources: "[[sources#<context>]]"`, and a context name that moved would
+    break every one of those pointers.
+
+    Grouping comes from `config.yaml`'s optional `source_contexts`, so
+    the view is not wired to one vault's folder names. Each rule is
+    `{"path": ..., "group_by": "child", "prefix": true|false}`: `child` groups by
+    the folder one level inside `path` (a file sitting directly in `path` becomes
+    its "loose files" or "root" group), and `prefix` renders the parent alongside
+    the child. With no rule matching, the context is the top-level folder, which
+    is the whole behaviour for a vault that declares nothing."""
+    p = display_path(p, cfg)
+    rules = [dict(r, path=display_path(r.get("path", ""), cfg)) for r in rules]
+    best = None
+    for r in rules:
+        d = r.get("path", "")
+        if (p == d or p.startswith(d + "/")) and (best is None or len(d) > len(best.get("path", ""))):
+            best = r
+    if best is None or best.get("group_by") != "child":
+        return p.split("/")[0]
+    d, pre = best["path"], best.get("prefix", False)
+    rest = p[len(d) + 1:].split("/")
+    if len(rest) > 1:
+        return f"{d} / {rest[0]}" if pre else rest[0]
+    return f"{d} / root" if pre else f"{d} loose files"

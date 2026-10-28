@@ -16,6 +16,9 @@ finds them. Scope orders the list and never hides a card: a session opened on th
 vault is rarely "in" the project a card names, so a filter would keep exactly the
 task-specific cards out of every session.
 
+The session records not closed (`augment_sessions/`, reference/sessions.md) follow
+the cards, one line each, so unfinished work is in view when a session starts.
+
     memory_context.py [<vault>] [--project NAME]
 """
 import argparse, os
@@ -39,7 +42,10 @@ def main():
     mine = [c for c in active if project in M.scopes(c[1])]
     general = [c for c in active if "global" in M.scopes(c[1]) and c not in mine]
     other = [c for c in active if c not in mine and c not in general]
+    recs = live_records(root)
     if not active:
+        if recs:
+            print(recs)
         return
     where = "augment_memory/card/" if root == (M.dir_setting(os.environ.get("CLAUDE_PROJECT_DIR")) or os.getcwd()) \
         else os.path.join(root, "augment_memory", "card") + "/"
@@ -58,6 +64,25 @@ def main():
     if left:
         out.append(f"({left} more past the {budget}-character budget; recall finds them.)")
     print("\n".join(out))
+    if recs:
+        print(recs)
+
+
+def live_records(root, cap=8):
+    """The session records not closed, one line each (reference/sessions.md), or ""."""
+    try:
+        import record_write as R
+        live = [r for r in R.load(root) if r[1].get("status") != "closed"]
+    except Exception:
+        return ""
+    if not live:
+        return ""
+    lines = [f"AUGMENT SESSIONS: {M.n(len(live), 'record')} not closed, newest first. Resume one by its id "
+             "(the record skill); a RECORD in this session writes its own."]
+    lines += ["- " + R.line(rid, fm) for rid, fm, _ in live[:cap]]
+    if len(live) > cap:
+        lines.append(f"- ... {len(live) - cap} more (record_write.py list)")
+    return "\n".join(lines)
 
 
 if __name__ == "__main__":

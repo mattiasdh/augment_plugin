@@ -22,18 +22,21 @@ VAULT/
 │       └── 12 tender/
 │           ├── 12.01 site-visit.md
 │           └── 12.04 selection-criteria.md
-└── augment_wiki/             the augment layer, written by the model
-    ├── config.yaml           the person's declarations: language, author, scope, harvest
-    ├── index.jsonl           current state, one entry per note or source
-    ├── history.jsonl         append-only log of every entry ever written
-    ├── verify-queue.md       the report the sweep reads
-    ├── relations_dismissed.jsonl
-    ├── concept/              ideas, principles, methods, claims
-    ├── entity/               people, organisations, places, products, tools, projects
-    ├── theme/                topical anchors a cluster points at through keywords
-    ├── tension/              recorded conflicts
-    ├── hub/                  generated indexes: one per type, one per kind, plus hub.md
-    └── view/                 generated cross-cutting views: relations, timeline, sources
+├── augment_wiki/             the augment layer, written by the model
+│   ├── config.yaml           the person's declarations: language, author, scope, harvest
+│   ├── index.jsonl           current state, one entry per note or source
+│   ├── history.jsonl         append-only log of every entry ever written
+│   ├── verify-queue.md       the report the sweep reads
+│   ├── relations_dismissed.jsonl
+│   ├── concept/              ideas, principles, methods, claims
+│   ├── entity/               people, organisations, places, products, tools, projects
+│   ├── theme/                topical anchors a cluster points at through keywords
+│   ├── tension/              recorded conflicts
+│   ├── hub/                  generated indexes: one per type, one per kind, plus hub.md
+│   └── view/                 generated cross-cutting views: relations, timeline, sources,
+│                             and briefing.md, the morning briefing (skills/brief)
+├── augment_memory/           how the work is done (reference/memory.md)
+└── augment_sessions/         where each recorded conversation stands (reference/sessions.md)
 ```
 
 **The method is not in the vault.** Rules, skills, reference and scripts ship in the plugin, versioned and released separately, so a vault carries its content and its declarations and nothing about how the system behaves. `config.yaml` records which plugin version compiled it.

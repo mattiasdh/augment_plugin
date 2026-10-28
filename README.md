@@ -6,7 +6,7 @@ It is not a Zettelkasten tool and not an automation. The division of labour is f
 
 ## What it gives you
 
-Ten skills plus a dispatcher, each one verb: seven for the vault, three for its memory layer.
+Twelve skills plus a dispatcher, each one verb: seven for the vault, one briefing, one for handing a session's work over, three for the memory layer.
 
 | Skill | What it does |
 |---|---|
@@ -18,6 +18,8 @@ Ten skills plus a dispatcher, each one verb: seven for the vault, three for its 
 | `/augment:mint` | Generates one node you name and wires it into the graph |
 | `/augment:dream` | The nightly cycle: detect, rebuild, consolidate, check, connect, regenerate, report |
 | `/augment:verify` | The weekly sweep: audit what the cycle wrote, decide what it may not decide alone |
+| `/augment:brief` | The morning briefing: yesterday's projects, the actions you wrote down, open sessions, what was captured and learned, what the night did; a note in the vault and a dashboard page |
+| `/augment:record` | Saves where a conversation's work stands as a session record, and resumes it later from Chat, Cowork or Code |
 | `/augment:remember` | Records how the work is done: a tool's real behaviour, a file convention, a reusable script, a working sequence |
 | `/augment:recall` | Searches that memory before a task a past session may have learned from |
 | `/augment:activate` | Starts a Chat conversation with the vault connected and the memory loaded, since Chat runs no hooks |
@@ -71,6 +73,8 @@ your-vault/
 ## Memory
 
 Beside the wiki sits a small memory layer for what the model learns while working rather than what the archive says: how a connector really behaves, which file conventions the person expects, a script worth reusing. **It never duplicates the notes.** Anything that would matter without Claude is offered to the source layer as an assisted note instead, and a memory that settles leaves for a skill or the person's standing preferences at the sweep. It has no ledger, since nothing is compiled from it; git history is its record. In Code and Cowork the cards that apply are loaded at session start and again after a compaction; in Chat, `activate` loads them. The contract is `reference/memory.md`.
+
+A third model-written layer, `augment_sessions/`, holds session records: where one conversation's work stands (goal, state, next steps, what it touched, how to resume), keyed by an id the first RECORD mints because Chat shows Claude neither its conversation's id nor its title. A later RECORD in the same conversation replaces the state; open records are listed at session start and in the morning briefing. The contract is `reference/sessions.md`.
 
 The method lives here in the plugin and is versioned separately, so a vault carries its content and its declarations and nothing about how the system behaves. `config.yaml` records which release last compiled it.
 

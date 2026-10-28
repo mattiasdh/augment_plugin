@@ -2,6 +2,18 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag. A second release on the same day adds a revision letter: `v2026-09-29 Rev. A` here, `2026.9.29-revA` in `plugin.json`.
 
+## v2026-10-28 Rev. A
+
+### New
+
+**A morning briefing.** `brief` recaps the vault since the last briefing: the projects and notes the person touched, the actions they wrote down (checkboxes added or ticked, and self-addressed lines in meeting reports and memos, found by `gen_briefing.py` from the git diffs and judged by the model), open session records, Claude's captures, memory learned, and the nightly run with what waits in the queue. It writes `augment_wiki/view/briefing.md` and lays it out as a dashboard page (`render_briefing.py`) published to a fixed artifact (`briefing.artifact_url`). It runs as the nightly cycle's new phase 9 and on demand; `briefing:` in `config.yaml` sets the timezone, owner aliases, action words and the page's title.
+
+**Session records.** `record` saves where a conversation's work stands into `augment_sessions/<id>.md` (goal, state, next steps, what it touched, a resume prompt), so it can be picked up from Chat, Cowork or Code. The first RECORD mints an id (`R-YYMMDD-xxxx`), since Chat shows Claude neither its conversation's id nor its title; later RECORDs in the conversation replace the state, and git keeps the earlier ones. In Code and Cowork the session id is stored too and finds the record again after a compaction. `record_write.py`, and the connector's `record_write`, `record_get` and `record_search`, held to it by a parity test; session start and `activate` list the records not closed. The contract is `reference/sessions.md`.
+
+### Improvement
+
+**The source-context grouping lives in `_gen_util.context_of`**, shared by the sources view and the briefing, so both group a project the same way.
+
 ## v2026-10-28
 
 ### New

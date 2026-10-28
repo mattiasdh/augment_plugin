@@ -143,6 +143,8 @@ The report is a **current-state dashboard, not an append log**, and must never a
 
 **Re-check drift immediately before the push.** A cycle pulls at the start and pushes at the end, and on a machine the owner also syncs to, that gap is long enough for a concurrent commit to land after phase 1 declared what changed. Run the detect script once more before committing, and fold in anything new. Treat a push rejection as exactly this signal, never as a reason to force-push or retry blindly: re-pull, re-detect, rebuild what the incoming commit drifted, then push.
 
+**9. Brief**, after the report and before the last push, skipped when `config.yaml` sets `briefing: enabled: false`. Run the `brief` skill end to end: its facts read the day the cycle has just closed, its note is written to `augment_wiki/view/briefing.md` and rides this run's push, and its page is published where the session can publish. The cycle's own report is in the queue by then, so the briefing's Overnight section reads tonight's run. A briefing that fails is a line in the report, never a reason to hold the push.
+
 ## Self-improvement
 
 A critical finding is not only reported, it is analysed into a proposed fix. Where one reveals a defect in the system itself, draft the change and queue it for sign-off at the sweep. It is not integrated automatically, because a wrong self-edit would propagate silently through every later run. What is autonomous is the detection and the proposal, never the edit.

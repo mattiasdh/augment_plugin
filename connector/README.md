@@ -19,6 +19,8 @@ A remote MCP server that reaches an augment vault through GitHub, for the surfac
 | `source_set` | A source's `augment:`, `created:`, `updated:` or `assisted_by:`, refused if the content hash would move | `source_write.py set` |
 | `source_callout` | A `[!ai]` or `[!note]` comment on a source, existing bytes untouched, `updated:` stamped, ledger entry parked | `source_write.py callout` |
 | `usage_cite` | Records the wiki notes an answer cited or the cards applied, and commits them with the opens `vault_read` and `memory_get` buffered, as one file in `augment_wiki/usage.pending/` | `usage_log.py --kind cite` |
+| `record_write` | A session record in `augment_sessions/`: the first call mints its id, later calls with that id replace the state; with id and status alone it parks or closes it | `record_write.py write` / `status` |
+| `record_get`, `record_search` | One record in full; records found by id, session id or words, or the live ones listed | `record_write.py get` / `search` / `list` |
 | `append_history` | Ledger entries, parked in `augment_wiki/history.pending/` for `compact_index.py` to merge | `augment-runner` `append_history` |
 
 **Usage.** `vault_read` and `memory_get` record each wiki note and memory card opened, without its content, in the Worker's key-value store (the same `OAUTH_KV` the sign-in uses, one key per event, kept at most sixty days). They reach the vault as one file in `augment_wiki/usage.pending/` when `usage_cite` is called or at the next `activate`; the nightly cycle folds that into the index. `usage: enabled: false` in config.yaml stops it. After deploying a version that adds `usage_cite`, reconnect the connector once in claude.ai so the tool list includes it.

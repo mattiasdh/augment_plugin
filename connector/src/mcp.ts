@@ -9,6 +9,7 @@ import * as vault from "./vault";
 import * as w from "./write";
 import * as usage from "./usage";
 import * as skillmem from "./skillmem";
+import * as record from "./record";
 
 export const VERSION = "0.1.0";
 const PROTOCOLS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"];
@@ -18,7 +19,8 @@ Before a task that names a tool, a file format, a client convention or a skill, 
 A skill whose references live in the vault (under the skills root that config.yaml declares) reads them with vault_read on every use, and reads its own lessons with skill_memory_get at the start of a run and rewrites them with skill_memory_update at the end. A change to such a skill's rules, as the person's feedback on its output, is never a memory card: propose it, and park it with memory_offer kind correction and target the reference file's path; the weekly sweep applies it with the person.
 Memory (memory_*) records how the work is done: how a tool, connector or MCP server really behaves, the person's file and output conventions, reusable snippets, working procedures. Test before writing: would this still matter if Claude were not involved? If yes it is content, not memory: offer it with capture_note (or memory_offer when the person is not there to confirm). Never store secrets, anyone else's personal data, or raw text copied from a page or file.
 Memory is never evidence about projects, clients or the domain; vault_search and vault_read are, and the wiki notes cite their sources. Reads see the last push to GitHub, not unsynced edits in Obsidian.
-Writes follow the same rules as every other surface (the plugin's rules/surfaces.md, Connector column): sources are append-only (source_callout, source_set), memory goes through memory_*, nothing is deleted or moved, closed folders stay closed. After an answer or a discussion, record the notes it cited with usage_cite (and after recall, the cards applied); opens are recorded by vault_read and memory_get themselves. What needs the plugin's scripts (process, mint, dream, the sweep's checks) cannot run here: say so, and point to a Claude Code session on the vault, which runs them in full from the Claude app too.`;
+Writes follow the same rules as every other surface (the plugin's rules/surfaces.md, Connector column): sources are append-only (source_callout, source_set), memory goes through memory_*, nothing is deleted or moved, closed folders stay closed. After an answer or a discussion, record the notes it cited with usage_cite (and after recall, the cards applied); opens are recorded by vault_read and memory_get themselves. RECORD saves where a conversation stands (goal, state, next steps, what it touched, a resume prompt) as one session record, for a later session on any surface to pick up: record_write mints an id on the first call (R-YYMMDD-xxxx); quote that id in your reply and pass it on every later record_write of the same conversation, which replaces the state. A record holds state, never decisions or findings, which go to the notes. Resume with record_search and record_get.
+What needs the plugin's scripts (process, mint, dream, the sweep's checks) cannot run here: say so, and point to a Claude Code session on the vault, which runs them in full from the Claude app too.`;
 
 type Args = Record<string, unknown>;
 interface Tool { name: string; description: string; inputSchema: object; run: (a: Args, ctx: Ctx) => Promise<string> }
@@ -49,7 +51,8 @@ export const TOOLS: Tool[] = [
         (author ? `The person is ${author} (author: in config.yaml): a [!note] callout and anything recorded as theirs carries this name.\n`
           : `No author: is set in config.yaml, so a [!note] callout cannot be written until the person's name is added there.\n`) +
         `This connector serves ${names.length} tools: ${names.join(", ")}. If any of these is missing from your tool list, claude.ai holds a stale copy of the connector's tools: ask the person to reconnect it (Settings, Connectors) or to switch the missing tools on, and do not substitute another server's tool.\n` +
-        (await m.context(s(a.project) ?? ""));
+        (await m.context(s(a.project) ?? "")) +
+        (await record.live(ctx.repo).catch(() => ""));
     },
   },
   {
@@ -140,6 +143,38 @@ export const TOOLS: Tool[] = [
       skill: str("The skill's folder name."), body: str("The full current lessons, replacing what is there."),
       seen: { type: "boolean", description: "The memory proved right in this run." } } },
     async run(a, ctx) { return skillmem.update(ctx.repo, { skill: String(a.skill ?? ""), body: s(a.body), seen: !!a.seen }, ctx.now(), ctx.by, ctx.kv); },
+  },
+  {
+    name: "record_write",
+    description: "RECORD: save where this conversation stands as a session record, so a later session on any surface can resume it. The first call (no id) mints an id R-YYMMDD-xxxx: quote it in your reply, and pass it as id on every later record_write in this conversation, which replaces the stored state (git keeps earlier versions). The body has five sections in order: ## Goal, ## State, ## Next steps (- [ ] items, owner named), ## Touched (notes, files, cards, links), ## Resume (a self-contained instruction for a fresh session). State only: decisions and findings go to the notes through capture_note, and the record links them. With id and status but no body it opens, parks or closes the record.",
+    inputSchema: { type: "object", properties: {
+      id: str("The record's id from an earlier record_write in this conversation. Omit on the first RECORD."),
+      title: str("A short name for the work, required on the first RECORD."),
+      body: str("The five sections, replacing the stored state."),
+      status: { type: "string", enum: [...record.STATUSES], description: "open (default), parked (paused on purpose) or closed (done)." },
+      project: str("The project the work belongs to, as the vault names it (e.g. 301 Harbour). Optional."),
+      surface: { type: "string", enum: ["chat", "cowork", "code"], description: "Where this conversation runs." },
+      session_id: str("The surface's own session id, when it shows one (Code, Cowork). Chat shows none: omit it.") } },
+    async run(a, ctx) {
+      return record.write(ctx.repo, { id: s(a.id), title: s(a.title), body: s(a.body), status: s(a.status), project: s(a.project), surface: s(a.surface), session_id: s(a.session_id) }, ctx.now(), ctx.by);
+    },
+  },
+  {
+    name: "record_get",
+    description: "Read one session record in full, to resume its work: then open what its Touched section lists and carry on from its Resume section.",
+    inputSchema: { type: "object", required: ["id"], properties: { id: str("The record's id, R-YYMMDD-xxxx.") } },
+    async run(a, ctx) { return record.get(ctx.repo, String(a.id ?? "")); },
+  },
+  {
+    name: "record_search",
+    description: "Find session records by id, session id, or words from the title, project, files or state (the person rarely remembers the id: search by what the work was about). Empty query lists the records not closed, newest first.",
+    inputSchema: { type: "object", properties: {
+      query: str("Words, an id or a session id. Empty lists the live records."),
+      status: { type: "string", enum: ["all", "live", ...record.STATUSES], description: "Default all (live when the query is empty)." } } },
+    async run(a, ctx) {
+      const qy = String(a.query ?? "");
+      return record.search(ctx.repo, qy, s(a.status) ?? (qy.trim() ? "all" : "live"));
+    },
   },
   {
     name: "vault_search",
