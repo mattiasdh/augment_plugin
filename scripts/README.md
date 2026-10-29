@@ -43,6 +43,8 @@ Each rewrites one derived file and prints a one-line summary. None of them decid
 | `gen_timeline.py` | `view/timeline.md`, dated decisions per project |
 | `gen_relations.py` | `view/relations.md`, the relationship overlay and the candidate lanes |
 | `gen_verify_queue.py` | the generated half of `verify-queue.md` |
+| `gen_briefing.py` | Prints the facts behind the morning briefing as JSON: changed notes, action candidates, records, cards, runs, queue, each with its link. `--scheduled` skips days `briefing.days` does not list. |
+| `render_briefing.py` | Lays the newest dated briefing out as the dashboard page and rewrites `view/briefing.md`, the index of all briefings. |
 | `gen_search.py` | `search.json`, titles, aliases, keywords, a one-line summary and cited sources per note, plus the in-scope sources, for a search that cannot open files |
 
 ## Memory
@@ -55,6 +57,8 @@ The memory layer (`reference/memory.md`) has no ledger and no compile step, so t
 | `memory_search.py` | Ranks cards by the query words in title, keywords, summary and body. RECALL's search. |
 | `gen_memory_index.py` | Rewrites `augment_memory/index.md` and reports defects, merge candidates, UNSTABLE cards (more than three edits in a week), decay proposals and waiting offers. DREAM phase 7b. `--check` writes nothing. |
 | `memory_context.py` | Every active card a session starts with: project-scoped first, then global, then cards scoped elsewhere, within a character budget. SessionStart hook; ACTIVATE runs it in Chat. Silent outside a vault. |
+| `record_write.py` | Session records in `augment_sessions/`: `write` (mints the id; a later write replaces the state), `status`, `get`, `list`, `search`. `reference/sessions.md`. |
+| `record_hook.py` | Keeps a recorded session's record current: Stop asks for a throttled re-record, SessionStart on compaction marks it due, SessionEnd appends what was touched with no model call. Hooks only; silent for a session without a record. |
 | `skill_memory.py` | A skill's own `MEMORY.md`: `get`, `set` (replace the lessons), `seen`, `list`; same cap and secret refusal as a card. |
 | `migrate_cards.py` | One-time move of flat memory cards into `card/<type>/` folders (`--apply`), with `git mv`. |
 | `usage_log.py` | Records which wiki notes and memory cards were opened (PostToolUse hook on Read), cited (`--kind cite`, answer and discuss) and applied (`--kind apply`, recall), and commits them as one `USAGE:` commit of a file in `augment_wiki/usage.pending/` (Stop and SessionEnd hooks). `--off` for off the record. |

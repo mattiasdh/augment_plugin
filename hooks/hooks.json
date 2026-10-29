@@ -41,6 +41,16 @@
             "statusMessage": "Loading augment memory"
           }
         ]
+      },
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/record_hook.py\" --event compact",
+            "timeout": 60
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -62,6 +72,11 @@
             "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/usage_log.py\" --flush --hook",
             "timeout": 60
+          },
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/record_hook.py\" --event stop",
+            "timeout": 60
           }
         ]
       }
@@ -72,6 +87,11 @@
           {
             "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/usage_log.py\" --flush --end --hook",
+            "timeout": 60
+          },
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/record_hook.py\" --event end",
             "timeout": 60
           }
         ]

@@ -13,7 +13,7 @@ session id (Code, Cowork), it is stored too, and a RECORD that names it without 
 finds its own record again, so the key survives a compaction.
 
     record_write.py <vault> write [--id ID] [--title T] [--status open|parked|closed]
-                                  [--project P] [--surface S] [--session-id SID]
+                                  [--project P] [--surface S] [--session-id SID] [--session-url URL]
                                   (--body-file F | --body TEXT) [--by producer/version]
     record_write.py <vault> status ID open|parked|closed [--by ...]
     record_write.py <vault> get ID
@@ -32,13 +32,20 @@ import _memory as M
 from _gen_util import stamp
 
 DIR = "augment_sessions"
-ORDER = ["id", "title", "status", "project", "surface", "session_id", "created", "updated", "records", "by"]
+ORDER = ["id", "title", "status", "project", "surface", "session_id", "session_url", "created", "updated", "records", "by"]
 QUOTED = ("title", "project")
 STATUSES = ("open", "parked", "closed")
 SECTIONS = ("Goal", "State", "Next steps", "Touched", "Resume")
 BODY_MAX = 8000          # a working state; past this it has become a transcript or a note
 ID_RE = re.compile(r"^R-\d{6}-[a-z2-7]{4}$")
 ALPHABET = "abcdefghijklmnopqrstuvwxyz234567"
+URL_RE = re.compile(r"^https://claude\.ai/\S+$")
+
+
+def url_of(session_id):
+    """The web address of a cloud Code session, from its `cse_` id; None for anything else."""
+    m = re.fullmatch(r"cse_([A-Za-z0-9]+)", str(session_id or ""))
+    return f"https://claude.ai/code/session_{m.group(1)}" if m else None
 
 
 class Refused(Exception):
@@ -144,6 +151,8 @@ def write(root, a):
     why = check_body(body)
     if why:
         raise Refused(why)
+    if a.session_url and not URL_RE.match(a.session_url):
+        raise Refused("session_url is the conversation's claude.ai address (https://claude.ai/...)")
     title = a.title or cur_fm.get("title")
     if not title:
         raise Refused("a new record needs --title")
@@ -157,6 +166,7 @@ def write(root, a):
         "id": rid, "title": title, "status": a.status or cur_fm.get("status") or "open",
         "project": a.project or cur_fm.get("project"), "surface": a.surface or cur_fm.get("surface"),
         "session_id": a.session_id or cur_fm.get("session_id"),
+        "session_url": a.session_url or url_of(a.session_id) or cur_fm.get("session_url") or url_of(cur_fm.get("session_id")),
         "created": cur_fm.get("created") or now, "updated": now,
         "records": (int(cur_fm.get("records", 0) or 0) + 1) if not new else 1, "by": a.by,
     }
@@ -191,6 +201,7 @@ def main():
     ap.add_argument("--project")
     ap.add_argument("--surface")
     ap.add_argument("--session-id")
+    ap.add_argument("--session-url", help="the conversation's claude.ai address; derived for Code sessions")
     ap.add_argument("--body")
     ap.add_argument("--body-file")
     ap.add_argument("--by", default="augment/claude-code")

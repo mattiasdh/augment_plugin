@@ -10,13 +10,20 @@ import type { Repo } from "./github";
 import { Refused, q, secretIn, splitNote, tokens, type Front } from "./memory";
 
 export const DIR = "augment_sessions";
-const ORDER = ["id", "title", "status", "project", "surface", "session_id", "created", "updated", "records", "by"];
+const ORDER = ["id", "title", "status", "project", "surface", "session_id", "session_url", "created", "updated", "records", "by"];
 const QUOTED = new Set(["title", "project"]);
 export const STATUSES = ["open", "parked", "closed"] as const;
 const SECTIONS = ["Goal", "State", "Next steps", "Touched", "Resume"];
 export const BODY_MAX = 8000;
 export const ID_RE = /^R-\d{6}-[a-z2-7]{4}$/;
 const ALPHABET = "abcdefghijklmnopqrstuvwxyz234567";
+const URL_RE = /^https:\/\/claude\.ai\/\S+$/;
+
+/** The web address of a cloud Code session, from its `cse_` id; undefined for anything else. */
+export function urlOf(sessionId: unknown): string | undefined {
+  const m = /^cse_([A-Za-z0-9]+)$/.exec(String(sessionId ?? ""));
+  return m ? `https://claude.ai/code/session_${m[1]}` : undefined;
+}
 
 export function render(fm: Front, body: string): string {
   const lines = ["---"];
@@ -73,10 +80,11 @@ async function mint(repo: Repo, now: string): Promise<string> {
   throw new Refused("could not mint a free id");
 }
 
-export interface WriteArgs { id?: string; title?: string; status?: string; project?: string; surface?: string; session_id?: string; body?: string }
+export interface WriteArgs { id?: string; title?: string; status?: string; project?: string; surface?: string; session_id?: string; session_url?: string; body?: string }
 
 export async function write(repo: Repo, a: WriteArgs, now: string, by: string): Promise<string> {
   if (a.status && !(STATUSES as readonly string[]).includes(a.status)) throw new Refused(`status is one of ${STATUSES.join(", ")}`);
+  if (a.session_url && !URL_RE.test(a.session_url)) throw new Refused("session_url is the conversation's claude.ai address (https://claude.ai/...)");
   if (a.id && !ID_RE.test(a.id)) throw new Refused(`${a.id} is not a record id (R-YYMMDD-xxxx)`);
   const statusOnly = a.body === undefined;
   if (statusOnly) {
@@ -104,7 +112,8 @@ export async function write(repo: Repo, a: WriteArgs, now: string, by: string): 
       if (isNew) id = await mint(repo, now);
       const fm: Front = {
         id, title, status: a.status ?? cfm.status ?? "open", project: a.project ?? cfm.project, surface: a.surface ?? cfm.surface,
-        session_id: a.session_id ?? cfm.session_id, created: cfm.created ?? now, updated: now,
+        session_id: a.session_id ?? cfm.session_id,
+        session_url: a.session_url ?? urlOf(a.session_id) ?? cfm.session_url ?? urlOf(cfm.session_id), created: cfm.created ?? now, updated: now,
         records: isNew ? 1 : Number(cfm.records ?? 0) + 1, by,
       };
       text = render(fm, a.body!);

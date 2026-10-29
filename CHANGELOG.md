@@ -2,6 +2,12 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag. A second release on the same day adds a revision letter: `v2026-09-29 Rev. A` here, `2026.9.29-revA` in `plugin.json`.
 
+## v2026-10-29 Rev. A
+
+### New
+
+**The briefing opens sessions, and a recorded Code or Cowork session keeps its record current.** A record carries `session_url`: derived from a Code session's `cse_` id (`https://claude.ai/code/session_<suffix>`), pasted once by the person in Chat or Cowork, where Claude cannot see the conversation's address (the first RECORD asks, optionally), and kept by later records. Each session in the briefing gets "open session" when the link is known and "resume in a new chat" always (`https://claude.ai/new?q=`, a prompt that restores the record). `record_hook.py`, opt-in by a session's first RECORD: the Stop hook asks for one re-record turn when the record is older than `sessions.auto_minutes` (30) and work has moved, or the conversation was compacted since (a hook cannot make Claude act before compaction, only at the next stop); SessionEnd appends the commits and changed paths since the last record to Touched with no model call. `sessions: auto: false` turns it off; off the record, it is silent.
+
 ## v2026-10-29
 
 ### Improvement

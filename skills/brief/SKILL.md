@@ -57,7 +57,7 @@ vault_commit: <window.tip>
 - [x] **<Task ticked>** <where>.
 
 ## Sessions
-- **[[augment_sessions/<id>|<id>]] <title>** <status, last recorded, and its first open next step>.
+- **[[augment_sessions/<id>|<id>]] <title>** <status, last recorded, and its first open next step>. [Open session](<session_url>), or [resume in a new chat](<resume_url>).
 
 ## Captured
 - **<what>** <Claude's capture, comment or correction, linked>.
@@ -72,7 +72,7 @@ vault_commit: <window.tip>
 Previous briefing: [[<previous_briefing>|<its date>]].
 ```
 
-Projects: at most six, the first three become the dashboard's columns, so put the three that matter most first. A section with nothing in it is left out, heading and all. Sessions lists every record not closed, stale ones (`stale: true`) last with "untouched since <date>". **Link everything that has a note behind it**, from the facts' `link`, `entity`, `path` and `previous_briefing` fields, never a path you composed: wikilinks by full path without `.md` (`[[notes/10_PROJECTS/…/memo|memo]]`), so they resolve in Obsidian and open from the page. The closing line is left out when `previous_briefing` is null. Nothing in either list → one line under the headline, "Nothing was written down yesterday.", and the lists go.
+Projects: at most six, the first three become the dashboard's columns, so put the three that matter most first. A section with nothing in it is left out, heading and all. Sessions lists every record not closed, stale ones (`stale: true`) last with "untouched since <date>". **Link everything that has a note behind it**, from the facts' `link`, `entity`, `path` and `previous_briefing` fields, never a path you composed: wikilinks by full path without `.md` (`[[notes/10_PROJECTS/…/memo|memo]]`), so they resolve in Obsidian and open from the page. The closing line is left out when `previous_briefing` is null. A Sessions item drops `[Open session], or` and starts `[Resume in a new chat]` when `session_url` is null (a Chat or Cowork conversation whose link was never given); the resume link is always there. Nothing in either list → one line under the headline, "Nothing was written down yesterday.", and the lists go.
 
 ## 4. Render and publish
 

@@ -54,6 +54,17 @@ describe("session records", () => {
     expect([...r.files.keys()].filter((k) => k.startsWith("augment_sessions/")).length).toBe(1);
   });
 
+  it("keeps a pasted conversation address, derives a Code one, and refuses anything off claude.ai", async () => {
+    const r = repo(), ctx = { repo: r, now: () => NOW, by: BY };
+    const url = "https://claude.ai/chat/f6f8057e-68ff-438b-b2b9-4dd90672442b";
+    const id = /(R-\S+) created/.exec(text(await call(ctx, "record_write", { title: "T", surface: "chat", session_url: url, body: BODY })))![1];
+    await call(ctx, "record_write", { id, body: BODY });
+    expect(r.files.get(`augment_sessions/${id}.md`)!.text).toContain(`session_url: ${url}`);
+    const id2 = /(R-\S+) created/.exec(text(await call(ctx, "record_write", { title: "C", session_id: "cse_01Abc", body: BODY })))![1];
+    expect(r.files.get(`augment_sessions/${id2}.md`)!.text).toContain("session_url: https://claude.ai/code/session_01Abc");
+    expect(text(await call(ctx, "record_write", { title: "X", session_url: "https://example.com/x", body: BODY }))).toMatch(/claude.ai address/);
+  });
+
   it("refuses a missing section, a secret, an unknown id, and vault_write into the folder", async () => {
     const r = repo(), ctx = { repo: r, now: () => NOW, by: BY };
     expect(text(await call(ctx, "record_write", { title: "T", body: "## Goal\nx" }))).toMatch(/missing section/);
@@ -73,7 +84,7 @@ describe("session records", () => {
     const name = readdirSync(join(d, "augment_sessions"))[0];
     const py = readFileSync(join(d, "augment_sessions", name), "utf-8");
     expect(record.render({ id: name.slice(0, -3), title: "Harbour: energy memo", status: "open", project: "301 Harbour", surface: "code",
-      session_id: "cse_1", created: NOW, updated: NOW, records: 1, by: BY }, BODY)).toBe(py);
+      session_id: "cse_1", session_url: "https://claude.ai/code/session_1", created: NOW, updated: NOW, records: 1, by: BY }, BODY)).toBe(py);
     expect(record.checkBody(BODY)).toBeNull();
   });
 });

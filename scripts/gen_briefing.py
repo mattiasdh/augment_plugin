@@ -28,7 +28,7 @@ counts, out-of-scope folders included: the briefing is the person's own view of 
 day, not a compilation, so the to-do folders scope rules ignore are exactly what it needs.
 """
 import _cli
-import argparse, datetime, json, os, re, subprocess, sys
+import argparse, datetime, json, os, re, subprocess, sys, urllib.parse
 from collections import defaultdict
 _cli.help_guard()
 
@@ -285,7 +285,11 @@ def sessions(root, cfg, since, tz):
 
     def row(rid, fm, body):
         nxt = body.split("## Next steps", 1)[-1].split("\n## ", 1)[0].strip() if "## Next steps" in body else ""
-        return {"id": rid, "link": f"{R.DIR}/{rid}.md", "title": fm.get("title"), "status": fm.get("status"), "project": fm.get("project"),
+        seed = (f"Restore session record {rid} ({fm.get('title', '')}) from the augment vault "
+                "and continue from its Resume section.")
+        return {"id": rid, "link": f"{R.DIR}/{rid}.md", "title": fm.get("title"),
+                "session_url": fm.get("session_url") or R.url_of(fm.get("session_id")),
+                "resume_url": "https://claude.ai/new?q=" + urllib.parse.quote(seed), "status": fm.get("status"), "project": fm.get("project"),
                 "updated": str(fm.get("updated", "")), "records": fm.get("records"), "surface": fm.get("surface"),
                 "next_steps": nxt[:800], "stale": str(fm.get("updated", "")) < cutoff}
     return {

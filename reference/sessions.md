@@ -14,6 +14,7 @@ status: open                 # open, parked (paused on purpose) or closed (done)
 project: "301 Harbour"       # as the vault names it; optional
 surface: chat                # chat, cowork or code
 session_id: cse_01…          # the surface's own id, where it has one
+session_url: https://claude.ai/code/session_01…   # derived for Code; pasted by the person in Chat or Cowork
 created: 2026-10-28 20:00
 updated: 2026-10-28 21:15
 records: 2                   # how many times this session recorded
@@ -39,8 +40,13 @@ The five sections are required, in this order:
 **The id is minted by the first RECORD, never derived from a title.** Chat shows Claude neither its conversation id nor its title, Claude cannot rename a Chat, and the person renames conversations; a title is a label, never a key. The id (`R-YYMMDD-xxxx`) is printed in the reply to every RECORD, and later RECORDs in the same conversation pass it back from context.
 
 - **Code and Cowork**: the session id is stored too (`CLAUDE_CODE_REMOTE_SESSION_ID` where set, else `CLAUDE_CODE_SESSION_ID`), and a RECORD that passes it without an id finds its own record, which survives a compaction. In a Code session the record skill also appends the id to the session's title.
-- **Chat**: the person may paste the id into the conversation's title by hand; nothing depends on it.
+- **Chat and Cowork**: the person may paste the id into the conversation's title by hand; nothing depends on it.
+- **The link** (`session_url`) is how the briefing opens a session. Code's is derived from its `cse_` id (`https://claude.ai/code/session_<suffix>`). Chat and Cowork do not show Claude their address, so the first RECORD asks once, optionally, for the person to paste it; it is kept from then on. The briefing also offers a resume link for every record, `https://claude.ai/new?q=…`, which starts a new conversation that restores the record.
 - **Finding one again** never needs the id: `search` scores the title and project, then the body, so "the Harbour energy one" finds it.
+
+## Kept current by hooks
+
+In Code and Cowork a session that has recorded once is kept current without being asked (`record_hook.py`). When Claude stops and the record is older than `sessions.auto_minutes` (30 by default) while the work has moved, or the conversation was compacted since, the Stop hook asks for one re-record turn, at most once in a row. It costs that one turn: the conversation re-read from cache and about two thousand tokens written. At session end the commits and changed paths since the last record are appended to Touched with no model call. `sessions: auto: false` turns both off. Chat runs no hooks, so there a record changes only when asked.
 
 ## Supersession
 

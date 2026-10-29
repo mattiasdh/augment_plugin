@@ -50,6 +50,8 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/record_write.py" <vault> write \
 
 Reply in two lines: the id (so the person can quote it anywhere, or paste it into a Chat title), and whether this created the record or replaced version n. In a Code session where `set_session_title` is available, append ` [<id>]` to the session's title on the first RECORD, keeping the title otherwise as it was.
 
+**The conversation's link.** A Code session's link is derived from its session id, so nothing is asked. In Chat and Cowork, Claude cannot see the conversation's address, so the first RECORD's reply ends with one optional line: "Paste this conversation's link (claude.ai/…) if you want the briefing to open it." When the person pastes it, record again with `--session-url` (connector: `session_url`); later records keep it. Never ask a second time, and never wait for it: without a link the briefing still offers a resume link that starts a new conversation.
+
 ## Restoring
 
 1. `search` with the words the person uses (project, subject, a file name, a date), or the id when they have it. Several hits: show the top three as one line each and let the person choose.

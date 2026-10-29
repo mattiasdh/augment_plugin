@@ -154,9 +154,10 @@ export const TOOLS: Tool[] = [
       status: { type: "string", enum: [...record.STATUSES], description: "open (default), parked (paused on purpose) or closed (done)." },
       project: str("The project the work belongs to, as the vault names it (e.g. 301 Harbour). Optional."),
       surface: { type: "string", enum: ["chat", "cowork", "code"], description: "Where this conversation runs." },
-      session_id: str("The surface's own session id, when it shows one (Code, Cowork). Chat shows none: omit it.") } },
+      session_id: str("The surface's own session id, when it shows one (Code, Cowork). Chat shows none: omit it."),
+      session_url: str("The conversation's claude.ai address, when the person pasted it (Chat and Cowork do not show it to Claude). Kept by later records; derived for Code sessions.") } },
     async run(a, ctx) {
-      return record.write(ctx.repo, { id: s(a.id), title: s(a.title), body: s(a.body), status: s(a.status), project: s(a.project), surface: s(a.surface), session_id: s(a.session_id) }, ctx.now(), ctx.by);
+      return record.write(ctx.repo, { id: s(a.id), title: s(a.title), body: s(a.body), status: s(a.status), project: s(a.project), surface: s(a.surface), session_id: s(a.session_id), session_url: s(a.session_url) }, ctx.now(), ctx.by);
     },
   },
   {
