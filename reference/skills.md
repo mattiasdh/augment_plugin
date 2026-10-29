@@ -72,6 +72,7 @@ Feedback that changes a rule is proposed as the exact lines to add, change or re
 - a folder with no SKILL.md at its top;
 - frontmatter that is not valid YAML or lacks a name or description;
 - a skill named otherwise than its folder;
+- `<` or `>` in the name or description, which claude.ai refuses on upload as XML tags;
 - a `references/` file the SKILL.md names that does not exist;
 - a `dist/` package behind its live files.
 

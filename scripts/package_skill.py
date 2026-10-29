@@ -115,6 +115,10 @@ def check(root):
             issues.append(f"skills: {rel}/SKILL.md lacks a name or description in its frontmatter")
         elif str(fm.get("name")) != name:
             issues.append(f"skills: {rel}/SKILL.md is named {fm.get('name')!r}, its folder {name!r}")
+        for key in ("name", "description"):
+            if re.search(r"[<>]", str(fm.get(key) or "")):
+                issues.append(f"skills: {rel}/SKILL.md has '<' or '>' in its {key}; claude.ai refuses the upload "
+                              "(it reads them as XML tags), so write the placeholder another way (N, [n])")
         for ref in sorted(set(re.findall(r"(?<![\w/:])references/[\w.+\-]+(?: [\w.+\-]+)*?\.md\b", body))):
             if not os.path.isfile(os.path.join(d, ref)):
                 issues.append(f"skills: {rel}/SKILL.md names {ref}, which does not exist")

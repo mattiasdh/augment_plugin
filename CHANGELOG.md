@@ -2,6 +2,12 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag. A second release on the same day adds a revision letter: `v2026-09-29 Rev. A` here, `2026.9.29-revA` in `plugin.json`.
 
+## v2026-10-29 Rev. B
+
+### Bug fix
+
+**`package_skill.py --check` reports `<` or `>` in a skill's name or description.** claude.ai refuses such an upload as containing XML tags, which the check did not catch, so a package built cleanly and failed only at upload.
+
 ## v2026-10-29 Rev. A
 
 ### New
