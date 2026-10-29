@@ -2,6 +2,16 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag. A second release on the same day adds a revision letter: `v2026-09-29 Rev. A` here, `2026.9.29-revA` in `plugin.json`.
 
+## v2026-10-29
+
+### Improvement
+
+**Briefings are dated, kept, linked, and written on weekday mornings only.** Each briefing is its own note, `augment_wiki/view/briefings/briefing-YYYYMMDD.md`, dated the morning it is read, and `augment_wiki/view/briefing.md` becomes the index of all of them, rewritten by `render_briefing.py`, whose page now links the seven before it. Nothing prunes them; `briefing.keep_days` is reserved for when a retention rule is decided. `gen_briefing.py` puts a `link` on every fact with a note behind it (session records, memory cards, the review queue, the project's wiki entity from the index, the previous briefing), and the brief skill links all of them. `briefing.days` (Monday to Friday by default) sets the mornings the nightly cycle writes one: `gen_briefing.py --scheduled` prints SKIP on any other day, while a briefing asked for by hand runs on any day. Monday's window reaches back to Friday's briefing, so the weekend is covered.
+
+### Bug fix
+
+**`augment_sessions/` is not an unruled folder.** `undecided_folders` skipped `augment_wiki` and `augment_memory` at the vault root but not the new session-records folder, so the first nightly run after v2026-10-28 Rev. A asked the sweep to rule on it.
+
 ## v2026-10-28 Rev. A
 
 ### New

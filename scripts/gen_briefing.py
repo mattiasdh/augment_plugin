@@ -37,7 +37,23 @@ from _gen_util import context_of, load_config, skills_root, split_note
 import record_write as R
 
 EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbe4904"
-VIEW = "augment_wiki/view/briefing.md"
+VIEW = "augment_wiki/view/briefing.md"          # the index: today's briefing, then every earlier one
+DATED = "augment_wiki/view/briefings"           # one file per morning, briefing-YYYYMMDD.md
+QUEUE = "augment_wiki/verify-queue.md"
+DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+
+
+def dated(root):
+    """Every dated briefing, newest first, as vault-relative paths."""
+    d = os.path.join(root, DATED)
+    if not os.path.isdir(d):
+        return []
+    names = [f for f in os.listdir(d) if re.fullmatch(r"briefing-\d{8}\.md", f)]
+    return [f"{DATED}/{f}" for f in sorted(names, reverse=True)]
+
+
+def dated_path(day):
+    return f"{DATED}/briefing-{day:%Y%m%d}.md"
 SYSTEM = re.compile(r"^(CAPTURE|WRITE|COMMENT|CORRECTION|MEMORY|DREAM|VERIFY|PROCESS|MINT|RECORD|USAGE|BRIEF|"
                     r"VERIFY\+PROCESS|[A-Z][A-Z+]{2,})\b[: ]")
 ACTION_WORDS = [
@@ -82,7 +98,8 @@ def window(root, cfg, a):
         u = datetime.datetime.fromisoformat(a.until) if a.until else now
         return (s if s.tzinfo else s.replace(tzinfo=tz)), (u if u.tzinfo else u.replace(tzinfo=tz)), tzname, "given"
     y = (now - datetime.timedelta(days=1)).replace(hour=0, minute=0)
-    fm, _ = split_note(open(os.path.join(root, VIEW), encoding="utf-8").read()) if os.path.exists(os.path.join(root, VIEW)) else ({}, "")
+    last = (dated(root) or [VIEW])[0]
+    fm, _ = split_note(open(os.path.join(root, last), encoding="utf-8").read()) if os.path.exists(os.path.join(root, last)) else ({}, "")
     prev = fm.get("window_until")
     if prev:
         try:
@@ -203,6 +220,7 @@ def note_changes(root, cfg, base, tip, paths, rx):
 
 def memory_changes(root, cs):
     cards = {slug: fm for slug, fm, _ in M.load_cards(root)}
+    paths = M.card_files(root)
     out, seen = [], 0
     for c in cs:
         if c["kind"] != "MEMORY":
@@ -215,8 +233,9 @@ def memory_changes(root, cs):
             seen += 1
             continue
         fm = cards.get(slug, {})
+        path = paths.get(slug)
         out.append({"action": act, "slug": slug, "title": fm.get("title", ""), "summary": fm.get("summary", ""),
-                    "skill": "skill " in c["subject"], "at": c["at"]})
+                    "skill": "skill " in c["subject"], "at": c["at"], "link": M.card_rel(path, root) if path else None})
     return out, seen
 
 
@@ -252,7 +271,8 @@ def queue_items(root):
         m = re.match(r"^- (Q-\d{4}-\d+)\s*\|\s*(.*)$", ln)
         if m:
             parts = [x.strip() for x in m.group(2).split("|")]
-            out.append({"id": m.group(1), "item": parts[0][:400], "ask": (parts[-1] if len(parts) > 1 else "")[:300]})
+            out.append({"id": m.group(1), "item": parts[0][:400], "ask": (parts[-1] if len(parts) > 1 else "")[:300],
+                        "link": f"{QUEUE}#Queued for confirmation"})
     return out
 
 
@@ -265,7 +285,7 @@ def sessions(root, cfg, since, tz):
 
     def row(rid, fm, body):
         nxt = body.split("## Next steps", 1)[-1].split("\n## ", 1)[0].strip() if "## Next steps" in body else ""
-        return {"id": rid, "title": fm.get("title"), "status": fm.get("status"), "project": fm.get("project"),
+        return {"id": rid, "link": f"{R.DIR}/{rid}.md", "title": fm.get("title"), "status": fm.get("status"), "project": fm.get("project"),
                 "updated": str(fm.get("updated", "")), "records": fm.get("records"), "surface": fm.get("surface"),
                 "next_steps": nxt[:800], "stale": str(fm.get("updated", "")) < cutoff}
     return {
@@ -275,18 +295,61 @@ def sessions(root, cfg, since, tz):
     }
 
 
+def project_entities(root, cfg):
+    """{folder prefix: wiki entity path} for project folders, read from the index: the
+    project entity most of the folder's indexed sources produced."""
+    idx = os.path.join(root, "augment_wiki/index.jsonl")
+    if not os.path.exists(idx):
+        return {}
+    entries = [json.loads(l) for l in open(idx, encoding="utf-8") if l.strip()]
+    projects = {e["id"] for e in entries if e.get("type") == "entity" and e.get("kind") == "project"}
+    rules = [r for r in (cfg.get("source_contexts") or []) if r.get("group_by") == "child"]
+    votes = defaultdict(lambda: defaultdict(int))
+    for e in entries:
+        sid = str(e.get("id", ""))
+        for r in rules:
+            base = str(r.get("path", "")).rstrip("/") + "/"
+            rest = sid[len(base):].split("/") if sid.startswith(base) else []
+            if len(rest) > 1:
+                for w in e.get("produced") or []:
+                    if w in projects:
+                        votes[base + rest[0] + "/"][w] += 1
+    return {k: max(v, key=v.get) for k, v in votes.items()}
+
+
+def entity_for(path, ents):
+    for pre, ent in ents.items():
+        if path.startswith(pre):
+            return ent
+    return None
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("vault")
     ap.add_argument("--date")
     ap.add_argument("--since")
     ap.add_argument("--until")
+    ap.add_argument("--scheduled", action="store_true",
+                    help="the nightly run: print SKIP and stop on a day briefing.days does not list")
     a = ap.parse_args()
     root = os.path.abspath(a.vault)
     if not os.path.isfile(os.path.join(root, M.MARKER)):
         print(f"REFUSED: {root} is not a vault (no {M.MARKER})")
         sys.exit(1)
     cfg = load_config(root)
+    b = cfg.get("briefing") or {}
+    tz0, _ = tzinfo(cfg)
+    now = datetime.datetime.now(tz0)
+    if a.scheduled:
+        if b.get("enabled") is False:
+            print("SKIP: briefing.enabled is false in config.yaml")
+            return
+        days = [str(d).strip().lower()[:3] for d in (b.get("days") or DAYS[:5])]
+        today = DAYS[now.weekday()]
+        if today not in days:
+            print(f"SKIP: {today} is not a briefing day (briefing.days: {', '.join(days)}); a briefing asked for by hand still runs")
+            return
     since, until, tzname, how = window(root, cfg, a)
     tz = since.tzinfo
     src = str(cfg.get("source_root") or "").strip("/")
@@ -312,6 +375,7 @@ def main():
         n["lines"] = keep
         budget -= len(keep)
 
+    ents = project_entities(root, cfg)
     groups = defaultdict(list)
     rules = cfg.get("source_contexts") or []
     for n in notes:
@@ -330,11 +394,19 @@ def main():
     for c in cs:
         kinds[c["kind"]] += 1
 
+    morning = (until - datetime.timedelta(minutes=1)).date() + datetime.timedelta(days=1) if (a.date or a.since) else now.date()
+    target = dated_path(morning)
+    earlier = [p for p in dated(root) if p != target]
     out = {
+        "write_to": target,
+        "heading_date": f"{morning:%A} {morning.day} {morning:%B %Y}",
+        "previous_briefing": earlier[0] if earlier else None,
+        "index": VIEW,
+        "queue_link": QUEUE,
         "window": {"since": since.isoformat(), "until": until.isoformat(), "timezone": tzname, "how": how,
                    "base": base[:7], "tip": tip[:7]},
         "commits_by_kind": dict(sorted(kinds.items())),
-        "projects": [{"context": k, "notes": v} for k, v in sorted(groups.items(), key=lambda kv: -sum(n["added_lines"] for n in kv[1]))],
+        "projects": [{"context": k, "entity": next((e for e in (entity_for(n["path"], ents) for n in v) if e), None), "notes": v} for k, v in sorted(groups.items(), key=lambda kv: -sum(n["added_lines"] for n in kv[1]))],
         "source_writes_by_claude": system_writes,
         "memory": {"changed": mem, "confirmed_seen": seen},
         "skill_memories": sorted({p for c in cs for st, p in c["files"] if sr and p.startswith(sr + "/") and p.endswith("/MEMORY.md")}),

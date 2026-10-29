@@ -34,7 +34,8 @@ VAULT/
 │   ├── tension/              recorded conflicts
 │   ├── hub/                  generated indexes: one per type, one per kind, plus hub.md
 │   └── view/                 generated cross-cutting views: relations, timeline, sources,
-│                             and briefing.md, the morning briefing (skills/brief)
+│                             and briefing.md, the index of the morning briefings
+│       └── briefings/        one dated briefing per weekday morning (skills/brief)
 ├── augment_memory/           how the work is done (reference/memory.md)
 └── augment_sessions/         where each recorded conversation stands (reference/sessions.md)
 ```

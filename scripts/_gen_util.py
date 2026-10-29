@@ -153,7 +153,7 @@ def undecided_folders(root, config):
             sub = f"{rel}/{name}" if rel else name
             if not os.path.isdir(os.path.join(full, name)) or name.startswith("."):
                 continue
-            if not rel and name in ("augment_wiki", "augment_memory"):
+            if not rel and name in ("augment_wiki", "augment_memory", "augment_sessions"):
                 continue
             state = scope_of(sub, config)
             inside = any(t.startswith(sub + "/") for t in touched)
