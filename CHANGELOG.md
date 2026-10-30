@@ -2,6 +2,12 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag. A second release on the same day adds a revision letter: `v2026-09-29 Rev. A` here, `2026.9.29-revA` in `plugin.json`.
 
+## v2026-10-30
+
+### New
+
+**The briefing looks ahead to today's and the next working day's calendar, when a calendar is connected.** `gen_briefing.py` gives `look_ahead`: the briefing morning, headed Today, and the next working day, headed Tomorrow or by its date (Friday looks ahead to Monday). A working day is one `briefing.days` lists that is not a holiday: `briefing.holidays: BE` computes the Belgian public holidays (Easter by the Gregorian computus) and `briefing.closed` adds the office's closures; the nightly run also skips those mornings. With a calendar connector in the session, the brief skill lists both days' events, all-day first, each linked to its project's wiki note where its subject names one (`project_names`), with a prep line from an open action on that project; attendees, bodies and join links never reach the vault. Without one, both sections are left out and one small line at the very end says how to connect it. `briefing.calendar_account` names the account the connector must be signed in as; a calendar read as anyone else is treated as not connected, so an empty admin calendar never reads as a free day. `briefing.calendar: false` drops both. The note's closing lines, under a `---` rule, now render small at the foot of the page.
+
 ## v2026-10-29 Rev. B
 
 ### Bug fix

@@ -52,6 +52,60 @@ def dated(root):
     return [f"{DATED}/{f}" for f in sorted(names, reverse=True)]
 
 
+def easter(y):
+    """Easter Sunday, by the anonymous Gregorian computus."""
+    a, b, c = y % 19, y // 100, y % 100
+    d, e = b // 4, b % 4
+    g = (8 * b + 13) // 25
+    h = (19 * a + b - d - g + 15) % 30
+    i, k = c // 4, c % 4
+    l = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 19 * l) // 433
+    month = (h + l - 7 * m + 90) // 25
+    return datetime.date(y, month, (h + l - 7 * m + 33 * month + 19) % 32)
+
+
+def holidays(b, year):
+    """The days off in a year: `briefing.holidays: BE` gives the Belgian public holidays,
+    `briefing.closed` adds the office's own closures (YYYY-MM-DD)."""
+    out = set()
+    if str(b.get("holidays") or "").upper() == "BE":
+        e = easter(year)
+        D = datetime.date
+        out |= {D(year, 1, 1), e + datetime.timedelta(days=1), D(year, 5, 1), e + datetime.timedelta(days=39),
+                e + datetime.timedelta(days=50), D(year, 7, 21), D(year, 8, 15), D(year, 11, 1), D(year, 11, 11),
+                D(year, 12, 25)}
+    for x in b.get("closed") or []:
+        try:
+            d = x if isinstance(x, datetime.date) else datetime.date.fromisoformat(str(x))
+            if d.year == year:
+                out.add(d)
+        except ValueError:
+            pass
+    return out
+
+
+def working(day, b):
+    """(is a working day, why not): a day `briefing.days` lists that is no holiday or closure."""
+    days = [str(d).strip().lower()[:3] for d in (b.get("days") or DAYS[:5])]
+    if DAYS[day.weekday()] not in days:
+        return False, f"{DAYS[day.weekday()]} is not a briefing day (briefing.days: {', '.join(days)})"
+    if day in holidays(b, day.year):
+        return False, f"{day.isoformat()} is a holiday or closure (briefing.holidays, briefing.closed)"
+    return True, ""
+
+
+def look_ahead(morning, b):
+    """The briefing morning and the next working day after it, with the heading each gets."""
+    nxt = morning + datetime.timedelta(days=1)
+    for _ in range(21):
+        if working(nxt, b)[0]:
+            break
+        nxt += datetime.timedelta(days=1)
+    head = "Tomorrow" if nxt == morning + datetime.timedelta(days=1) else f"{nxt:%A} {nxt.day} {nxt:%B}"
+    return [{"date": morning.isoformat(), "heading": "Today"}, {"date": nxt.isoformat(), "heading": head}]
+
+
 def dated_path(day):
     return f"{DATED}/briefing-{day:%Y%m%d}.md"
 SYSTEM = re.compile(r"^(CAPTURE|WRITE|COMMENT|CORRECTION|MEMORY|DREAM|VERIFY|PROCESS|MINT|RECORD|USAGE|BRIEF|"
@@ -321,6 +375,23 @@ def project_entities(root, cfg):
     return {k: max(v, key=v.get) for k, v in votes.items()}
 
 
+def project_names(root, ents):
+    """Each project's folder, wiki note, title and aliases, for matching calendar events to projects."""
+    idx = os.path.join(root, "augment_wiki/index.jsonl")
+    meta = {}
+    if os.path.exists(idx):
+        for l in open(idx, encoding="utf-8"):
+            if l.strip():
+                e = json.loads(l)
+                meta[e.get("id")] = e
+    out = []
+    for pre, ent in sorted(ents.items()):
+        e = meta.get(ent, {})
+        out.append({"folder": pre.rstrip("/").split("/")[-1], "entity": ent, "title": e.get("title"),
+                    "aliases": e.get("aliases") or []})
+    return out
+
+
 def entity_for(path, ents):
     for pre, ent in ents.items():
         if path.startswith(pre):
@@ -349,10 +420,9 @@ def main():
         if b.get("enabled") is False:
             print("SKIP: briefing.enabled is false in config.yaml")
             return
-        days = [str(d).strip().lower()[:3] for d in (b.get("days") or DAYS[:5])]
-        today = DAYS[now.weekday()]
-        if today not in days:
-            print(f"SKIP: {today} is not a briefing day (briefing.days: {', '.join(days)}); a briefing asked for by hand still runs")
+        ok, why = working(now.date(), b)
+        if not ok:
+            print(f"SKIP: {why}; a briefing asked for by hand still runs")
             return
     since, until, tzname, how = window(root, cfg, a)
     tz = since.tzinfo
@@ -405,6 +475,10 @@ def main():
         "write_to": target,
         "heading_date": f"{morning:%A} {morning.day} {morning:%B %Y}",
         "previous_briefing": earlier[0] if earlier else None,
+        "look_ahead": look_ahead(morning, b) if b.get("calendar", True) is not False else [],
+        "calendar_owner": b.get("calendar_owner"),
+        "calendar_account": b.get("calendar_account"),
+        "project_names": project_names(root, ents),
         "index": VIEW,
         "queue_link": QUEUE,
         "window": {"since": since.isoformat(), "until": until.isoformat(), "timezone": tzname, "how": how,

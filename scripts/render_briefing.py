@@ -70,7 +70,8 @@ a { color: inherit; text-decoration: underline; text-decoration-color: var(--ink
 a:hover { text-decoration-color: var(--clay); }
 a:focus-visible { outline: 2px solid var(--clay); outline-offset: 2px; }
 code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; background: var(--wash); padding: 1px 4px; border-radius: 3px; }
-.foot { margin-top: 36px; color: var(--ink-grey); font-size: 12px; }
+.foot { margin-top: 12px; color: var(--ink-grey); font-size: 12px; }
+section + .foot { margin-top: 36px; }
 @media (max-width: 640px) {
   h1 { font-size: 29px; }
   .acts { grid-template-columns: minmax(0, 1fr); gap: 14px; }
@@ -102,11 +103,19 @@ def inline(text, vault):
 
 
 def parse(body):
-    """(title, headline, [(section, [paragraphs], [items], [(sub, text)])])."""
-    title, headline, sections, cur = "", "", [], None
+    """(title, headline, [(section, [paragraphs], [items], [(sub, text)])], [closing lines]).
+
+    Lines after a `---` rule in the body close the briefing (the previous briefing's
+    link, the agenda reminder) and are laid out small, at the very end of the page."""
+    title, headline, sections, cur, tail = "", "", [], None, None
     for raw in body.split("\n"):
         ln = raw.rstrip()
-        if ln.startswith("# ") and not title:
+        if tail is not None:
+            if ln.strip():
+                tail.append(ln.strip())
+        elif ln.strip() == "---":
+            tail = []
+        elif ln.startswith("# ") and not title:
             title = ln[2:].strip()
         elif ln.startswith("## "):
             cur = [ln[3:].strip(), [], [], []]
@@ -125,7 +134,7 @@ def parse(body):
                 cur[3][-1][1] = ln.strip()
             else:
                 cur[1].append(ln.strip())
-    return title, headline, sections
+    return title, headline, sections, tail or []
 
 
 def item(text, vault):
@@ -168,7 +177,7 @@ def render(root, cfg, path, files):
     vault = str(b.get("obsidian_vault") or os.path.basename(root.rstrip("/")))
     page_title = str(b.get("title") or "Morning Briefing")
     fm, body = split_note(open(os.path.join(root, path), encoding="utf-8").read())
-    title, headline, sections = parse(body)
+    title, headline, sections, tail = parse(body)
     acts, lists = [], []
     for name, paras, items, subs in sections:
         if subs and not acts:            # the first section with ### subsections is the project strip
@@ -206,6 +215,7 @@ def render(root, cfg, path, files):
         except ValueError:
             return str(v)
     w = f"{when(fm.get('window_since', ''))} to {when(fm.get('window_until', ''))}"
+    out += [f'<p class="foot">{inline(t, vault)}</p>' for t in tail]
     out.append(f'<p class="foot">From the vault at {html.escape(str(fm.get("vault_commit", "")))}, covering {html.escape(w)}.</p>')
     earlier = [p for p in files if p != path][:EARLIER]
     if earlier:
