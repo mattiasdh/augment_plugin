@@ -10,6 +10,7 @@ Deterministic implementations, **run and never read into context**. Every one ta
 | `detect_changes.py` | Re-hashes every indexed source against its recorded hash: drift, missing, retired. The staleness detector. |
 | `conformance.py` | The wiki-integrity gate. Exit 1 on defects, advisories are non-blocking. Run before every commit. |
 | `hash_source.py` | One file's content hash, printed bare; several files, or `--path`, print `<hash> <path>` per line. The byte rule is exact; never reimplement it. |
+| `self_check.py` | The plugin checks itself: every script parses on the running Python, every script a hook, skill, rule or reference names exists. Takes no vault. DREAM phase 0a and the sweep's health check. |
 | `release_check.py` | Typography and register on a file about to be released. |
 | `similar_notes.py` | Scores a candidate title and drafted opening against every wiki note before a mint, with the relations view's own TF-IDF; `LIKELY SAME` at 0.30. PROCESS step 6 and MINT step 2. `--sources` also scores in-scope sources and the inbox before a WRITE capture, `LIKELY SAME` at 0.60 for a source. |
 | `rewrite_check.py` | What a rewrite actually changed, against a revision or a section. |

@@ -33,6 +33,8 @@ Deletion is available to neither.
 
 Run in order. Each phase writes to history as it goes, so an interrupted run resumes from the last completed item rather than from the beginning.
 
+**0a. Check the plugin itself.** `self_check.py` (no vault argument) before anything else: every script must parse on this interpreter and every script a skill or hook names must exist. A finding is not worked around in the moment; record it in the system-observations list in this run, with what, where and a proposed fix, and say in the report which phases it blocked.
+
 **0. Fold in what the connector wrote.** `compact_index.py <vault>` first: it merges the ledger entries the remote connector parked in `augment_wiki/history.pending/` (comments and appends from the phone) into `history.jsonl` before anything reads the ledger, and the usage files sessions committed in `augment_wiki/usage.pending/` into `usage.jsonl`, projecting each wiki note's `used` field (reference/scope-and-index.md).
 
 **1. Detect changed inputs.** Compare every indexed source's current content hash against the stored one. Declaring or retagging a source is not an edit and must not trigger a rebuild. Where a hash differs, mark every note compiled from that source `#stale`. This runs first because everything downstream depends on knowing what moved.
@@ -152,6 +154,8 @@ A critical finding is not only reported, it is analysed into a proposed fix. Whe
 **The trigger is not only a critical finding.** A defect can be small and still real: a stale path in a deployed file, a mechanical step done by hand for want of a script, a check that flags what it should not, a bookkeeping id that collides. These surface while the work is being done rather than as a phase's pass or fail, so without a home they get routed around in the moment and then persist run after run. Any friction noticed in any operation is recorded to the standing system-observations list, kept distinct from the content queue, each with what, where, and a proposed fix. **The bar to record is deliberately low; the bar to change is unchanged.**
 
 **Record it in that list and nowhere else.** An idea mentioned only in a run-log entry has not been proposed, it has been buried, because the decision is taken by walking the list. Lift it into the list in the same run rather than leaving it where it surfaced.
+
+**Where a check can find the defect, the check runs every cycle.** Phase 0a is that check for the plugin's own scripts: a break found by a check is found tonight, while one found by a phase is found only when that phase is needed, and then routed around.
 
 Fix at the cause rather than the symptom, per `rules/cognition.md` §6: ask why the existing rule did not hold and what else shares that cause, and prefer a check to a restatement.
 

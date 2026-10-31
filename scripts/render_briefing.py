@@ -145,7 +145,8 @@ def item(text, vault):
     m = re.match(r"^(\*\*.+?\*\*)\s*(.*)$", text)
     inner = f"{inline(m.group(1), vault)} <span class=\"rest\">{inline(m.group(2), vault)}</span>" if m else \
         f'<span class="rest">{inline(text, vault)}</span>'
-    return f'<li{" class=\"done\"" if done else ""}><div>{inner}</div></li>'
+    cls = ' class="done"' if done else ""
+    return f'<li{cls}><div>{inner}</div></li>'
 
 
 def heading(root, path):

@@ -2,6 +2,16 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag. A second release on the same day adds a revision letter: `v2026-09-29 Rev. A` here, `2026.9.29-revA` in `plugin.json`.
 
+## v2026-10-31
+
+### Bug fix
+
+**`render_briefing.py` parses on Python 3.11 again.** A backslash inside an f-string expression, valid only from 3.12, stopped the nightly cycle from rendering the briefing page in the cloud container.
+
+### Improvement
+
+**The plugin checks its own scripts at the start of every nightly cycle.** `self_check.py` compiles every script under the running interpreter and confirms every script a hook, skill, rule or reference names exists; DREAM runs it as phase 0a and records any finding as a system observation, and the sweep's health check reports it.
+
 ## v2026-10-30
 
 ### New
