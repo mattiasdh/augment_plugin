@@ -63,6 +63,16 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/bug_signal.py\" --hook",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "Stop": [
@@ -93,6 +103,18 @@
             "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/record_hook.py\" --event end",
             "timeout": 60
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/bug_signal.py\" --hook",
+            "timeout": 10
           }
         ]
       }

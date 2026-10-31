@@ -13,7 +13,7 @@ the model writing the briefing judges and phrases but never has to dig:
 - captures, comments and corrections written into the source layer by Claude;
 - memory cards added, updated or superseded, and skill memories rewritten;
 - the nightly runs in the window, and the items in the review queue awaiting the person;
-- session records written in the window, and every record not yet closed.
+- session records created or updated in the window.
 
 The window runs from yesterday 00:00 to now, so a briefing always covers the whole of
 the day before even when one was already written during it; when the previous briefing
@@ -348,7 +348,6 @@ def sessions(root, cfg, since, tz):
                 "next_steps": nxt[:800], "stale": str(fm.get("updated", "")) < cutoff}
     return {
         "written_in_window": [row(*r) for r in recs if lo <= str(r[1].get("updated", "")) <= today],
-        "not_closed": [row(*r) for r in recs if r[1].get("status") != "closed"],
         "stale_days": stale_days,
     }
 

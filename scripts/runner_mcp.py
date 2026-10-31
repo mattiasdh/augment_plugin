@@ -119,7 +119,16 @@ def tool_run_script(args):
     except subprocess.TimeoutExpired:
         return f"TIMEOUT after {TIMEOUT}s: {name}", True
     out = (p.stdout or "") + (("\n[stderr]\n" + p.stderr) if p.stderr.strip() else "")
-    return _clip(f"$ {name}.py {' '.join(argv)}\n[exit {p.returncode}]\n{out}"), p.returncode != 0
+    text = f"$ {name}.py {' '.join(argv)}\n[exit {p.returncode}]\n{out}"
+    if p.returncode:
+        try:
+            from bug_signal import message
+            sig = message(out)
+        except Exception:
+            sig = None
+        if sig:
+            text += "\n" + sig
+    return _clip(text), p.returncode != 0
 
 
 def tool_append_history(args):

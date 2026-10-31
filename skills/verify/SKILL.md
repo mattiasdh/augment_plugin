@@ -60,7 +60,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/undo_run.py" <vault> <run-id> [--only slu
 
 **5. Confirm everything else in batch**: merges, splits, tension notes, supersessions, and any system change the cycle proposed. Work the system-observations list the same way, taking a decision on each, applying what is confirmed and striking what is declined so it is not re-proposed. Nothing touching a rule, a skill or a script is integrated without sign-off here.
 
-Before signing off a fix, test it against `rules/cognition.md` §6: does it repair the cause or the symptom, and if a rule already existed, does the fix change where that rule is read rather than only how firmly it is worded? Any confirmed change to the plugin is logged the same session in its changelog, dated, at most two sentences. A new feature or substantial improvement also gets a docs pass; a bug fix does not.
+Before signing off a fix, test it against `rules/cognition.md` §6: does it repair the cause or the symptom, and if a rule already existed, does the fix change where that rule is read rather than only how firmly it is worded? Before a confirmed plugin fix is released, `self_check.py` must pass: every script parses on the running Python and every script a skill or hook names exists. Any confirmed change to the plugin is logged the same session in its changelog, dated, at most two sentences. A new feature or substantial improvement also gets a docs pass; a bug fix does not.
 
 **An empty convergence batch is the healthy state, and a full one is the finding.** What reaches this list is only what the cycle **held**, so empty means it judged its slice cleanly and the audit in step 3 is where the reading goes. The signal inverts: a cycle holding most of its slice, or holding the same item across several sweeps, is the thing to ask about, because either the material got harder or the cycle stopped deciding.
 
@@ -99,8 +99,6 @@ Approved items are applied with the keyword script rather than hand-edited, wher
 **Report the harvest state first**, from the generated section at the top of the queue: files processed of total per declared folder, and by how much any folder falls short. It leads because harvest is the one place the derived layer can silently lag the sources, and because the cycle no longer withholds it, a standing backlog is not a held decision but simply work the next cycle still has to run.
 
 Then echo the current scope, so what the system may read stays visible rather than becoming invisible configuration.
-
-Run `self_check.py` and report its line: a script that does not parse, or a script a skill names that does not exist, is a system observation to decide on today, not next week.
 
 Read the queue's Usage section with them: sessions that read the vault, notes opened and cited, cards applied. It is the flag rate's denominator, so report the flag rate against it rather than alone.
 

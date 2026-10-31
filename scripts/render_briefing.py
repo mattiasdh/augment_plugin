@@ -13,10 +13,12 @@ plain numbered lists, one per section of the note.
 
     render_briefing.py <vault> [--file PATH] [--out PATH]      --out default: the runner's scratch, <tmp>/augment-scratch/briefing.html
 
-Links: a wikilink `[[path|label]]` becomes an `obsidian://open` link into the vault
-(`briefing.obsidian_vault`, default the vault folder's name), so a tap on the phone opens
-the note in Obsidian; the label is always shown as text, since a custom-scheme link may
-do nothing inside an artifact. The page title is `briefing.title` (default "Morning
+Links: a wikilink `[[path|label]]` becomes a link to the note on GitHub,
+`<briefing.repo_url>/blob/<briefing.repo_branch, default main>/<path>.md`, so it opens
+from inside the artifact; `repo_url` defaults to the origin remote when it is on
+github.com. With neither, it becomes an `obsidian://open` link into the vault
+(`briefing.obsidian_vault`, default the vault folder's name). Only the page changes:
+the note keeps its wikilinks. The page title is `briefing.title` (default "Morning
 Briefing"). Prints the path written.
 """
 import _cli
@@ -89,8 +91,10 @@ def inline(text, vault):
         out.append(html.escape(text[pos:m.start()]))
         if m.group(1):
             path, label = m.group(1).strip(), (m.group(2) or os.path.basename(m.group(1))).strip()
-            uri = "obsidian://open?vault=" + urllib.parse.quote(vault) + "&file=" + urllib.parse.quote(path)
-            out.append(f'<a href="{html.escape(uri)}">{html.escape(label)}</a>')
+            uri = (vault + urllib.parse.quote(path) + ".md" if vault.startswith("https://") else
+                   "obsidian://open?vault=" + urllib.parse.quote(vault) + "&file=" + urllib.parse.quote(path))
+            tgt = ' target="_blank" rel="noopener"' if uri.startswith("https://") else ""
+            out.append(f'<a href="{html.escape(uri)}"{tgt}>{html.escape(label)}</a>')
         elif m.group(3):
             out.append(f'<a href="{html.escape(m.group(4))}" target="_blank" rel="noopener">{html.escape(m.group(3))}</a>')
         elif m.group(5):
@@ -173,9 +177,27 @@ def write_index(root, files):
     return write_if_changed(os.path.join(root, VIEW), "\n".join(lines))
 
 
+def link_base(root, b):
+    """Where the page's vault links point: the repository's file view on GitHub when
+    `briefing.repo_url` is set or the origin remote is on github.com, so a link opens
+    inside the artifact; else the Obsidian vault."""
+    url = str(b.get("repo_url") or "").strip()
+    if not url:
+        try:
+            import subprocess
+            r = subprocess.run(["git", "remote", "get-url", "origin"], cwd=root, capture_output=True, text=True, timeout=10)
+            m = re.match(r"^(?:https://github\.com/|git@github\.com:)([^/]+/[^/]+?)(?:\.git)?/?$", r.stdout.strip())
+            url = f"https://github.com/{m.group(1)}" if m else ""
+        except Exception:
+            url = ""
+    if url.startswith("https://"):
+        return url.rstrip("/") + "/blob/" + urllib.parse.quote(str(b.get("repo_branch") or "main")) + "/"
+    return str(b.get("obsidian_vault") or os.path.basename(root.rstrip("/")))
+
+
 def render(root, cfg, path, files):
     b = cfg.get("briefing") or {}
-    vault = str(b.get("obsidian_vault") or os.path.basename(root.rstrip("/")))
+    vault = link_base(root, b)
     page_title = str(b.get("title") or "Morning Briefing")
     fm, body = split_note(open(os.path.join(root, path), encoding="utf-8").read())
     title, headline, sections, tail = parse(body)

@@ -2,6 +2,14 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag. A second release on the same day adds a revision letter: `v2026-09-29 Rev. A` here, `2026.9.29-revA` in `plugin.json`.
 
+## v2026-10-31 Rev. A
+
+### Improvement
+
+**The plugin reacts when one of its scripts breaks, instead of checking every night.** `bug_signal.py`, a hook on every Bash run in Code and appended by `runner_mcp.py` elsewhere, names the script, line and error of a traceback and asks for a System observations item with a proposed fix; DREAM's phase 0a is removed and `self_check.py` now runs before a plugin fix is released.
+
+**The briefing lists only the sessions recorded in its window, and its page links open on GitHub.** `gen_briefing.py` drops the list of every open record; `render_briefing.py` points each vault link at `briefing.repo_url` (default the origin remote on github.com) in a new tab, since `obsidian://` links do nothing inside an artifact, and the note keeps its wikilinks.
+
 ## v2026-10-31
 
 ### Bug fix
