@@ -60,7 +60,7 @@ Reply in two lines: the id (so the person can quote it anywhere, or paste it int
 
 ## Committing
 
-`RECORD: <id> <title>` touching only `augment_sessions/`, with the `Assisted-by:` trailer; a status change is `RECORD: <id> <status>`. The connector commits for itself. A record is the session's own write, so it commits even in a session that changed nothing else.
+`RECORD: <id> <title>` touching only `augment_sessions/` (the record and `index.md`, which the script rewrites), with the `Assisted-by:` trailer; a status change is `RECORD: <id> <status>`. The connector commits for itself. A record is the session's own write, so it commits even in a session that changed nothing else.
 
 ## Never
 

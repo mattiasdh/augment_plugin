@@ -85,7 +85,7 @@ vault_commit: <window.tip>
 - [x] **<Task ticked>** <where>.
 
 ## Sessions
-- **[[augment_sessions/<id>|<id>]] <title>** <status, last recorded, and its first open next step>. [Open session](<session_url>), or [resume in a new chat](<resume_url>).
+- **[[<link without .md>|<id>]] <title>** <status, last recorded, and its first open next step>. [Open session](<session_url>), or [resume in a new chat](<resume_url>).
 
 ## Captured
 - **<what>** <Claude's capture, comment or correction, linked>.

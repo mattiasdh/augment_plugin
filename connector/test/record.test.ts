@@ -20,6 +20,7 @@ const post = (body: unknown) => new Request("https://x/mcp", { method: "POST", b
 const call = async (ctx: any, name: string, args: object) =>
   (await (await serve(post({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: args } }), ctx)).json() as any).result;
 const text = (r: any) => r.content[0].text as string;
+const recFile = (r: FakeRepo, id: string) => [...r.files.entries()].find(([p]) => p.startsWith(`augment_sessions/${id}`))!;
 
 beforeEach(() => vault.clearCache());
 
@@ -33,12 +34,19 @@ describe("session records", () => {
     expect(id.startsWith("R-261028-")).toBe(true);
     t = LATER;
     expect(text(await call(ctx, "record_write", { id, body: BODY.replace("U-values checked.", "Memo sent.") }))).toContain(`version 2, superseding the state of ${NOW}`);
-    const f = r.files.get(`augment_sessions/${id}.md`)!.text;
+    const [fp, ff] = recFile(r, id);
+    expect(fp).toBe(`augment_sessions/${id} harbour-energy-memo.md`);
+    const f = ff.text;
     expect(f).toContain("records: 2");
     expect(f).toContain(`created: ${NOW}`);
     expect(f).toContain("Memo sent.");
     expect(f).toContain('title: "Harbour: energy memo"');
     expect(r.commits.at(-1)).toMatch(new RegExp(`^RECORD: ${id} Harbour`));
+    const idx = r.files.get("augment_sessions/index.md")!.text;
+    expect(idx).toContain(`## Open (1)`);
+    expect(idx).toContain(`[[augment_sessions/${id} harbour-energy-memo|${id}]] **Harbour: energy memo** (301 Harbour, chat, updated ${LATER}). Next: mdh: send to the engineer`);
+    expect(text(await call(ctx, "record_write", { id, title: "Harbour: memo sent", body: BODY }))).toContain("version 3");
+    expect(recFile(r, id)[0]).toBe(`augment_sessions/${id} harbour-energy-memo.md`);
     expect(text(await call(ctx, "record_search", { query: "harbour energy" }))).toContain(id);
     expect(text(await call(ctx, "record_search", { query: id }))).toMatch(/^100/);
     expect(text(await call(ctx, "record_write", { id, status: "parked" }))).toContain("now parked");
@@ -51,7 +59,7 @@ describe("session records", () => {
     const r = repo(), ctx = { repo: r, now: () => NOW, by: BY };
     const id = /(R-\S+) created/.exec(text(await call(ctx, "record_write", { title: "T", session_id: "cse_9", body: BODY })))![1];
     expect(text(await call(ctx, "record_write", { session_id: "cse_9", body: BODY }))).toContain(`RECORD ${id} updated`);
-    expect([...r.files.keys()].filter((k) => k.startsWith("augment_sessions/")).length).toBe(1);
+    expect([...r.files.keys()].filter((k) => k.startsWith("augment_sessions/R-")).length).toBe(1);
   });
 
   it("keeps a pasted conversation address, derives a Code one, and refuses anything off claude.ai", async () => {
@@ -59,9 +67,9 @@ describe("session records", () => {
     const url = "https://claude.ai/chat/f6f8057e-68ff-438b-b2b9-4dd90672442b";
     const id = /(R-\S+) created/.exec(text(await call(ctx, "record_write", { title: "T", surface: "chat", session_url: url, body: BODY })))![1];
     await call(ctx, "record_write", { id, body: BODY });
-    expect(r.files.get(`augment_sessions/${id}.md`)!.text).toContain(`session_url: ${url}`);
+    expect(recFile(r, id)[1].text).toContain(`session_url: ${url}`);
     const id2 = /(R-\S+) created/.exec(text(await call(ctx, "record_write", { title: "C", session_id: "cse_01Abc", body: BODY })))![1];
-    expect(r.files.get(`augment_sessions/${id2}.md`)!.text).toContain("session_url: https://claude.ai/code/session_01Abc");
+    expect(recFile(r, id2)[1].text).toContain("session_url: https://claude.ai/code/session_01Abc");
     expect(text(await call(ctx, "record_write", { title: "X", session_url: "https://example.com/x", body: BODY }))).toMatch(/claude.ai address/);
   });
 
@@ -81,9 +89,16 @@ describe("session records", () => {
     writeFileSync(join(d, "augment_wiki/config.yaml"), CONFIG);
     execFileSync("python3", [join(SCRIPTS, "record_write.py"), d, "write", "--title", "Harbour: energy memo", "--project", "301 Harbour",
       "--surface", "code", "--session-id", "cse_1", "--body", BODY, "--by", BY, "--now", NOW]);
-    const name = readdirSync(join(d, "augment_sessions"))[0];
+    const name = readdirSync(join(d, "augment_sessions")).find((n) => n.startsWith("R-"))!;
+    const id = name.slice(0, 13);
+    expect(name).toBe(record.fileOf(id, "Harbour: energy memo").split("/")[1]);
+    expect(record.slug("Élia : métré Sapinette, het plan van de toren 2026 en meer")).toBe("elia-metre-sapinette-plan-toren-2026");
     const py = readFileSync(join(d, "augment_sessions", name), "utf-8");
-    expect(record.render({ id: name.slice(0, -3), title: "Harbour: energy memo", status: "open", project: "301 Harbour", surface: "code",
+    const [pfm, pbody] = [{ id, title: "Harbour: energy memo", status: "open", project: "301 Harbour", surface: "code", session_id: "cse_1",
+      session_url: "https://claude.ai/code/session_1", created: NOW, updated: NOW, records: 1, by: BY }, BODY];
+    expect(record.renderIndex([{ id, path: `augment_sessions/${name}`, fm: pfm, body: pbody }]))
+      .toBe(readFileSync(join(d, "augment_sessions", "index.md"), "utf-8"));
+    expect(record.render({ id, title: "Harbour: energy memo", status: "open", project: "301 Harbour", surface: "code",
       session_id: "cse_1", session_url: "https://claude.ai/code/session_1", created: NOW, updated: NOW, records: 1, by: BY }, BODY)).toBe(py);
     expect(record.checkBody(BODY)).toBeNull();
   });

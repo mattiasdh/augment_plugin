@@ -2,6 +2,12 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag. A second release on the same day adds a revision letter: `v2026-09-29 Rev. A` here, `2026.9.29-revA` in `plugin.json`.
 
+## v2026-11-02 Rev. A
+
+### Improvement
+
+**Session records are named for a person browsing the folder, and listed in an index.** A record is now `augment_sessions/<id> <slug>.md`, the slug from its first title and kept when the title changes, and every lookup matches the id prefix; `augment_sessions/index.md` lists every record by status with its project, last update and first open step, rewritten by every RECORD from the plugin, the connector and the Stop hook, and by DREAM's regenerate phase. `migrate_records.py` renames existing records with `git mv` and rewrites the links in the briefings.
+
 ## v2026-11-02
 
 ### New

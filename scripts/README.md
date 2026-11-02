@@ -60,9 +60,10 @@ The memory layer (`reference/memory.md`) has no ledger and no compile step, so t
 | `memory_search.py` | Ranks cards by the query words in title, keywords, summary and body. RECALL's search. |
 | `gen_memory_index.py` | Rewrites `augment_memory/index.md` and reports defects, merge candidates, UNSTABLE cards (more than three edits in a week), decay proposals and waiting offers. DREAM phase 7b. `--check` writes nothing. |
 | `memory_context.py` | Every active card a session starts with: project-scoped first, then global, then cards scoped elsewhere, within a character budget. SessionStart hook; ACTIVATE runs it in Chat. Silent outside a vault. |
-| `record_write.py` | Session records in `augment_sessions/`: `write` (mints the id; a later write replaces the state), `status`, `get`, `list`, `search`. `reference/sessions.md`. |
+| `record_write.py` | Session records in `augment_sessions/`: `write` (mints the id; a later write replaces the state), `status`, `get`, `list`, `search`. `reference/sessions.md`; `index` rewrites `augment_sessions/index.md`, which every write also does. |
 | `record_hook.py` | Keeps a recorded session's record current: Stop asks for a throttled re-record, SessionStart on compaction marks it due, SessionEnd appends what was touched with no model call. Hooks only; silent for a session without a record. |
 | `skill_memory.py` | A skill's own `MEMORY.md`: `get`, `set` (replace the lessons), `seen`, `list`; same cap and secret refusal as a card. |
+| `migrate_records.py` | One-time rename of session records to `<id> <slug>.md` (`--apply`), with `git mv`; rewrites the links in the briefings, reports any under `notes/`, writes the index. |
 | `migrate_cards.py` | One-time move of flat memory cards into `card/<type>/` folders (`--apply`), with `git mv`. |
 | `usage_log.py` | Records which wiki notes and memory cards were opened (PostToolUse hook on Read), cited (`--kind cite`, answer and discuss) and applied (`--kind apply`, recall), and commits them as one `USAGE:` commit of a file in `augment_wiki/usage.pending/` (Stop and SessionEnd hooks). `--off` for off the record. |
 | `memory_recall.py` | Names the few cards a prompt is about, by its rare words in their titles, keywords and summaries. UserPromptSubmit hook; silent when nothing clears the bar. `memory_recall.py <vault> <words>` prints the scores for tuning. |

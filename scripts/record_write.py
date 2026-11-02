@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Session records: `augment_sessions/<id>.md` (reference/sessions.md).
+"""Session records: `augment_sessions/<id> <slug>.md` (reference/sessions.md).
 
 A record is the working state of one conversation, written so that a fresh session on
 any surface (Chat, Cowork, Code) can pick the work up again: its goal, where it stands,
@@ -19,13 +19,18 @@ finds its own record again, so the key survives a compaction.
     record_write.py <vault> get ID
     record_write.py <vault> list [--status open|parked|closed|all]
     record_write.py <vault> search WORDS... [--status ...]
+    record_write.py <vault> index                  regenerate augment_sessions/index.md
+
+The file is named `<id> <slug>.md`, the slug taken from the first title and kept when the
+title later changes, so links stay valid; the id prefix is what every lookup matches.
+`augment_sessions/index.md` lists every record by status and is rewritten by every write.
 
 The body carries five sections, in this order: `## Goal`, `## State`, `## Next steps`,
 `## Touched`, `## Resume`. Through the connector the same writes are `record_write`,
 `record_get` and `record_search`, held to this file by a parity test.
 """
 import _cli
-import argparse, os, random, re, sys
+import argparse, os, random, re, sys, unicodedata
 _cli.help_guard()
 
 import _memory as M
@@ -38,6 +43,9 @@ STATUSES = ("open", "parked", "closed")
 SECTIONS = ("Goal", "State", "Next steps", "Touched", "Resume")
 BODY_MAX = 8000          # a working state; past this it has become a transcript or a note
 ID_RE = re.compile(r"^R-\d{6}-[a-z2-7]{4}$")
+FILE_RE = re.compile(r"^(R-\d{6}-[a-z2-7]{4})(?: [a-z0-9-]+)?\.md$")
+INDEX = "index.md"
+SLUG_STOP = {"a", "an", "the", "and", "of", "for", "to", "in", "on", "with", "de", "du", "des", "la", "le", "les", "et", "en", "het", "een", "van", "voor"}
 ALPHABET = "abcdefghijklmnopqrstuvwxyz234567"
 URL_RE = re.compile(r"^https://claude\.ai/\S+$")
 
@@ -93,8 +101,36 @@ def mint(root, today=None):
     raise Refused("could not mint a free id")
 
 
+def slug(title):
+    """At most six words or 50 characters of the title, lowercase ASCII, hyphen-joined."""
+    t = unicodedata.normalize("NFKD", str(title or "")).encode("ascii", "ignore").decode().lower()
+    words = [w for w in re.findall(r"[a-z0-9]+", t) if w not in SLUG_STOP][:6]
+    out = ""
+    for w in words:
+        if len(out) + len(w) + (1 if out else 0) > 50:
+            break
+        out = f"{out}-{w}" if out else w
+    return out
+
+
+def file_of(rid, title):
+    sl = slug(title)
+    return f"{rid} {sl}.md" if sl else f"{rid}.md"
+
+
 def path_of(root, rid):
-    return os.path.join(root, DIR, f"{rid}.md")
+    """The record's file, found by its id prefix; the bare `<id>.md` when there is none yet."""
+    d = os.path.join(root, DIR)
+    if os.path.isdir(d):
+        for f in sorted(os.listdir(d)):
+            m = FILE_RE.match(f)
+            if m and m.group(1) == rid:
+                return os.path.join(d, f)
+    return os.path.join(d, f"{rid}.md")
+
+
+def rel_of(root, rid):
+    return os.path.relpath(path_of(root, rid), root).replace(os.sep, "/")
 
 
 def load(root):
@@ -102,10 +138,11 @@ def load(root):
     d = os.path.join(root, DIR)
     out = []
     if os.path.isdir(d):
-        for f in os.listdir(d):
-            if f.endswith(".md") and ID_RE.match(f[:-3]):
+        for f in sorted(os.listdir(d)):
+            m = FILE_RE.match(f)
+            if m:
                 fm, body = M.split_note(open(os.path.join(d, f), encoding="utf-8").read())
-                out.append((f[:-3], fm, body))
+                out.append((m.group(1), fm, body))
     out.sort(key=lambda r: str(r[1].get("updated", "")), reverse=True)
     return out
 
@@ -171,8 +208,10 @@ def write(root, a):
         "records": (int(cur_fm.get("records", 0) or 0) + 1) if not new else 1, "by": a.by,
     }
     os.makedirs(os.path.join(root, DIR), exist_ok=True)
-    open(path_of(root, rid), "w", encoding="utf-8", newline="\n").write(render(fm, body))
-    rel = f"{DIR}/{rid}.md"
+    p = os.path.join(root, DIR, file_of(rid, title)) if new else path_of(root, rid)
+    open(p, "w", encoding="utf-8", newline="\n").write(render(fm, body))
+    write_index(root)
+    rel = rel_of(root, rid)
     if new:
         return f"RECORD {rid} created ({rel}). Quote this id to resume or update it from any surface."
     return f"RECORD {rid} updated, version {fm['records']}, superseding the state of {cur_fm.get('updated', '?')} ({rel})."
@@ -187,13 +226,59 @@ def set_status(root, rid, status, by, now=None):
     fm, body = M.split_note(open(p, encoding="utf-8").read())
     fm.update(status=status, updated=now or stamp(), by=by)
     open(p, "w", encoding="utf-8", newline="\n").write(render(fm, body))
+    write_index(root)
     return f"RECORD {rid} is now {status}."
+
+
+def first_step(body):
+    sec = body.split("## Next steps", 1)[-1].split("\n## ", 1)[0] if "## Next steps" in body else ""
+    for l in sec.splitlines():
+        m = re.match(r"^\s*-\s*\[ \]\s*(.+)$", l)
+        if m:
+            t = m.group(1).strip()
+            return t if len(t) <= 140 else t[:139].rstrip() + "…"
+    return ""
+
+
+def render_index(root):
+    recs = load(root)
+    lines = ["---", "generated:", "  by: augment/record_write.py", "---",
+             "# Session records", "",
+             "Where each recorded conversation stands, newest first. Rewritten by every RECORD; "
+             "restore one by quoting its id in any session.", ""]
+    for st, head in (("open", "Open"), ("parked", "Parked"), ("closed", "Closed")):
+        rows = [r for r in recs if (r[1].get("status") or "open") == st]
+        if not rows:
+            continue
+        lines += [f"## {head} ({len(rows)})", ""]
+        for rid, fm, body in rows:
+            f = os.path.basename(path_of(root, rid))[:-3]
+            meta = ", ".join(str(x) for x in (fm.get("project"), fm.get("surface"), f"updated {fm.get('updated', '?')}") if x)
+            nxt = first_step(body) if st != "closed" else ""
+            lines.append(f"- [[{DIR}/{f}|{rid}]] **{fm.get('title', '')}** ({meta})" + (f". Next: {nxt}" if nxt else ""))
+        lines.append("")
+    if not recs:
+        lines += ["No records yet.", ""]
+    return "\n".join(lines)
+
+
+def write_index(root):
+    """Rewrite augment_sessions/index.md; returns its path relative to the vault."""
+    d = os.path.join(root, DIR)
+    if not os.path.isdir(d):
+        return None
+    p = os.path.join(d, INDEX)
+    text = render_index(root)
+    old = open(p, encoding="utf-8").read() if os.path.exists(p) else None
+    if old != text:
+        open(p, "w", encoding="utf-8", newline="\n").write(text)
+    return f"{DIR}/{INDEX}"
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("vault")
-    ap.add_argument("cmd", choices=["write", "status", "get", "list", "search"])
+    ap.add_argument("cmd", choices=["write", "status", "get", "list", "search", "index"])
     ap.add_argument("rest", nargs="*")
     ap.add_argument("--id")
     ap.add_argument("--title")
@@ -218,6 +303,8 @@ def main():
             if len(a.rest) != 2:
                 raise Refused("status takes ID and open|parked|closed")
             print(set_status(root, a.rest[0], a.rest[1], a.by, a.now))
+        elif a.cmd == "index":
+            print(f"wrote {write_index(root) or 'nothing (no augment_sessions/)'}")
         elif a.cmd == "get":
             if not a.rest or not os.path.exists(path_of(root, a.rest[0])) or not ID_RE.match(a.rest[0]):
                 raise Refused(f"no record {a.rest[0] if a.rest else '(none given)'}; search for it")

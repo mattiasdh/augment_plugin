@@ -1,10 +1,12 @@
 /**
- * Session records, `augment_sessions/<id>.md`: the connector's half of the plugin's
+ * Session records, `augment_sessions/<id> <slug>.md`: the connector's half of the plugin's
  * `scripts/record_write.py` (reference/sessions.md). The working state of one
  * conversation, replaced by every later RECORD of it, so a session on another surface
  * can resume the work. Chat is the surface that needs this most and the one that shows
  * Claude neither its conversation id nor its title, so the key is an id the first
- * RECORD mints. The folder is written through these tools only; vault_write refuses it.
+ * RECORD mints. The slug comes from the first title and stays; `index.md` lists every
+ * record and is rewritten in the same commit. The folder is written through these tools
+ * only; vault_write refuses it.
  */
 import type { Repo } from "./github";
 import { Refused, q, secretIn, splitNote, tokens, type Front } from "./memory";
@@ -51,20 +53,76 @@ export function checkBody(body: string): string | null {
   return null;
 }
 
-const pathOf = (id: string) => `${DIR}/${id}.md`;
+export const FILE_RE = /^(R-\d{6}-[a-z2-7]{4})(?: [a-z0-9-]+)?\.md$/;
+export const INDEX = `${DIR}/index.md`;
+const SLUG_STOP = new Set(["a", "an", "the", "and", "of", "for", "to", "in", "on", "with", "de", "du", "des", "la", "le", "les", "et", "en", "het", "een", "van", "voor"]);
 
-interface Rec { id: string; fm: Front; body: string }
+/** At most six words or 50 characters of the title, lowercase ASCII, hyphen-joined; as record_write.py's slug. */
+export function slug(title: unknown): string {
+  const t = String(title ?? "").normalize("NFKD").replace(/[^\x00-\x7f]/g, "").toLowerCase();
+  const words = (t.match(/[a-z0-9]+/g) ?? []).filter((w) => !SLUG_STOP.has(w)).slice(0, 6);
+  let out = "";
+  for (const w of words) {
+    if (out.length + w.length + (out ? 1 : 0) > 50) break;
+    out = out ? `${out}-${w}` : w;
+  }
+  return out;
+}
+
+export const fileOf = (id: string, title: unknown) => { const s = slug(title); return `${DIR}/${s ? `${id} ${s}` : id}.md`; };
+
+export interface Rec { id: string; path: string; fm: Front; body: string }
 
 async function load(repo: Repo): Promise<Rec[]> {
   const files = await repo.readDir(DIR).catch(() => []);
   const out: Rec[] = [];
   for (const f of files) {
-    const name = f.path.split("/").pop()!;
-    if (!name.endsWith(".md") || !ID_RE.test(name.slice(0, -3))) continue;
+    const m = FILE_RE.exec(f.path.split("/").pop()!);
+    if (!m) continue;
     const [fm, body] = splitNote(f.text);
-    out.push({ id: name.slice(0, -3), fm, body });
+    out.push({ id: m[1], path: f.path, fm, body });
   }
-  return out.sort((a, b) => (String(a.fm.updated ?? "") < String(b.fm.updated ?? "") ? 1 : -1));
+  return out.sort(newest);
+}
+
+/** Newest update first; ties by file name, as record_write.py's load. */
+const newest = (a: Rec, b: Rec) => {
+  const x = String(a.fm.updated ?? ""), y = String(b.fm.updated ?? "");
+  return x < y ? 1 : x > y ? -1 : a.path < b.path ? -1 : a.path > b.path ? 1 : 0;
+};
+
+/** The record's file, found by its id prefix. */
+async function find(repo: Repo, id: string): Promise<Rec | undefined> {
+  return (await load(repo)).find((r) => r.id === id);
+}
+
+function firstStep(body: string): string {
+  const sec = body.includes("## Next steps") ? body.split("## Next steps").slice(1).join("## Next steps").split("\n## ")[0] : "";
+  for (const l of sec.split("\n")) {
+    const m = /^\s*-\s*\[ \]\s*(.+)$/.exec(l);
+    if (m) { const t = m[1].trim(); return t.length <= 140 ? t : t.slice(0, 139).trimEnd() + "…"; }
+  }
+  return "";
+}
+
+/** augment_sessions/index.md, byte for byte as record_write.py's render_index. */
+export function renderIndex(recs: Rec[]): string {
+  const lines = ["---", "generated:", "  by: augment/record_write.py", "---", "# Session records", "",
+    "Where each recorded conversation stands, newest first. Rewritten by every RECORD; restore one by quoting its id in any session.", ""];
+  for (const [st, head] of [["open", "Open"], ["parked", "Parked"], ["closed", "Closed"]]) {
+    const rows = recs.filter((r) => String(r.fm.status || "open") === st);
+    if (!rows.length) continue;
+    lines.push(`## ${head} (${rows.length})`, "");
+    for (const r of rows) {
+      const f = r.path.split("/").pop()!.slice(0, -3);
+      const meta = [r.fm.project, r.fm.surface, `updated ${r.fm.updated ?? "?"}`].filter((x) => x !== undefined && x !== null && x !== "").join(", ");
+      const nxt = st !== "closed" ? firstStep(r.body) : "";
+      lines.push(`- [[${DIR}/${f}|${r.id}]] **${r.fm.title ?? ""}** (${meta})` + (nxt ? `. Next: ${nxt}` : ""));
+    }
+    lines.push("");
+  }
+  if (!recs.length) lines.push("No records yet.", "");
+  return lines.join("\n");
 }
 
 const line = (r: Rec) =>
@@ -75,7 +133,7 @@ async function mint(repo: Repo, now: string): Promise<string> {
   for (let i = 0; i < 50; i++) {
     let id = `R-${d}-`;
     for (let j = 0; j < 4; j++) id += ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
-    if (!(await repo.read(pathOf(id)))) return id;
+    if (!(await find(repo, id))) return id;
   }
   throw new Refused("could not mint a free id");
 }
@@ -97,10 +155,12 @@ export async function write(repo: Repo, a: WriteArgs, now: string, by: string): 
     const head = (await repo.head()).oid;
     let id = a.id ?? "";
     if (!id && a.session_id) id = (await load(repo)).find((r) => String(r.fm.session_id ?? "") === a.session_id)?.id ?? "";
-    const cur = id ? await repo.read(pathOf(id)) : null;
+    const all = await load(repo);
+    const curRec = id ? all.find((r) => r.id === id) : undefined;
+    const cur = curRec ? { text: render(curRec.fm, curRec.body) } : null;
     if (a.id && !cur) throw new Refused(`no record ${a.id}; omit id to start a new one, or record_search for the right id`);
-    const [cfm, cbody] = cur ? splitNote(cur.text) : [{} as Front, ""];
-    let text: string, msg: string, done: string;
+    const [cfm, cbody] = curRec ? [curRec.fm, curRec.body] : [{} as Front, ""];
+    let text: string, msg: string, done: string, path = curRec?.path ?? "";
     if (statusOnly) {
       text = render({ ...cfm, status: a.status, updated: now, by }, cbody);
       msg = `RECORD: ${id} ${a.status}`;
@@ -109,7 +169,7 @@ export async function write(repo: Repo, a: WriteArgs, now: string, by: string): 
       const title = a.title ?? (cfm.title as string | undefined);
       if (!title) throw new Refused("a new record needs a title");
       const isNew = !cur;
-      if (isNew) id = await mint(repo, now);
+      if (isNew) { id = await mint(repo, now); path = fileOf(id, title); }
       const fm: Front = {
         id, title, status: a.status ?? cfm.status ?? "open", project: a.project ?? cfm.project, surface: a.surface ?? cfm.surface,
         session_id: a.session_id ?? cfm.session_id,
@@ -118,16 +178,23 @@ export async function write(repo: Repo, a: WriteArgs, now: string, by: string): 
       };
       text = render(fm, a.body!);
       msg = `RECORD: ${id} ${title}`;
-      done = isNew ? `RECORD ${id} created (${pathOf(id)}). Quote this id to resume or update it from any surface.`
-        : `RECORD ${id} updated, version ${fm.records}, superseding the state of ${cfm.updated ?? "?"} (${pathOf(id)}).`;
+      done = isNew ? `RECORD ${id} created (${path}). Quote this id to resume or update it from any surface.`
+        : `RECORD ${id} updated, version ${fm.records}, superseding the state of ${cfm.updated ?? "?"} (${path}).`;
     }
-    if ((await repo.commit([{ path: pathOf(id), text }], `${msg}\n\nAssisted-by: ${by}`, head)) === "ok") return done;
+    const [nfm, nbody] = splitNote(text);
+    const recs = [...all.filter((r) => r.id !== id), { id, path, fm: nfm, body: nbody }]
+      .sort(newest);
+    const changes = [{ path, text }];
+    const idx = renderIndex(recs), oldIdx = await repo.read(INDEX);
+    if (!oldIdx || oldIdx.text !== idx) changes.push({ path: INDEX, text: idx });
+    if ((await repo.commit(changes, `${msg}\n\nAssisted-by: ${by}`, head)) === "ok") return done;
   }
   throw new Refused("the vault kept changing underneath this write; read again and retry");
 }
 
 export async function get(repo: Repo, id: string): Promise<string> {
-  const f = ID_RE.test(id) ? await repo.read(pathOf(id)) : null;
+  const r = ID_RE.test(id) ? await find(repo, id) : undefined;
+  const f = r ? await repo.read(r.path) : null;
   if (!f) throw new Refused(`no record ${id}; record_search for it`);
   return f.text;
 }

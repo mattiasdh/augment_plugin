@@ -341,7 +341,7 @@ def sessions(root, cfg, since, tz):
         nxt = body.split("## Next steps", 1)[-1].split("\n## ", 1)[0].strip() if "## Next steps" in body else ""
         seed = (f"Restore session record {rid} ({fm.get('title', '')}) from the augment vault "
                 "and continue from its Resume section.")
-        return {"id": rid, "link": f"{R.DIR}/{rid}.md", "title": fm.get("title"),
+        return {"id": rid, "link": R.rel_of(root, rid), "title": fm.get("title"),
                 "session_url": fm.get("session_url") or R.url_of(fm.get("session_id")),
                 "resume_url": "https://claude.ai/new?q=" + urllib.parse.quote(seed), "status": fm.get("status"), "project": fm.get("project"),
                 "updated": str(fm.get("updated", "")), "records": fm.get("records"), "surface": fm.get("surface"),

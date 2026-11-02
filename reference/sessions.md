@@ -4,7 +4,7 @@
 
 ## Where and what
 
-`augment_sessions/<id>.md`, one file per conversation, beside `augment_memory/` and outside the source tree, so nothing compiles it into the wiki and no scope rule reaches it. Written only through `record_write.py` (Tier 1 and 2) or the connector's `record_write`; read with `record_write.py get` or `record_get`.
+`augment_sessions/<id> <slug>.md`, one file per conversation (the slug, from the first title and kept when the title changes, is for a person browsing the folder; every lookup matches the id prefix), listed by status in `augment_sessions/index.md`, which every write regenerates, beside `augment_memory/` and outside the source tree, so nothing compiles it into the wiki and no scope rule reaches it. Written only through `record_write.py` (Tier 1 and 2) or the connector's `record_write`; read with `record_write.py get` or `record_get`.
 
 ```
 ---

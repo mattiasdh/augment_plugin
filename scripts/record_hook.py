@@ -52,7 +52,7 @@ def find(root, ids):
 
 def last_written(root, rid):
     """When the record was last written, as epoch seconds: its last commit, else the file's mtime."""
-    rel = f"{R.DIR}/{rid}.md"
+    rel = R.rel_of(root, rid)
     t = sh(root, "log", "-1", "--format=%ct", "--", rel).strip()
     p = os.path.join(root, rel)
     mt = os.path.getmtime(p) if os.path.exists(p) else 0
@@ -146,10 +146,11 @@ def main():
         new_body = parts[0].rstrip("\n") + "\n" + line + "\n\n" + parts[1] + parts[2]
         fm.update(updated=stamp(), by="augment/record_hook")
         fm["session_url"] = fm.get("session_url") or R.url_of(fm.get("session_id"))
-        rel = f"{R.DIR}/{rid}.md"
+        rel = R.rel_of(root, rid)
         open(os.path.join(root, rel), "w", encoding="utf-8", newline="\n").write(R.render(fm, new_body))
+        idx = R.write_index(root)
         msg = f"RECORD: {rid} auto\n\nAssisted-by: augment/record_hook"
-        if sh(root, "add", "--", rel) is not None and sh(root, "commit", "-q", "-m", msg, "--", rel) is not None:
+        if sh(root, "add", "--", rel, idx) is not None and sh(root, "commit", "-q", "-m", msg, "--", rel, idx) is not None:
             if subprocess.run(["git", "push", "-q", "origin", "HEAD:main"], cwd=root, capture_output=True, timeout=60).returncode:
                 subprocess.run(["git", "pull", "-q", "--no-rebase", "--no-edit", "origin", "main"], cwd=root, capture_output=True, timeout=60)
                 subprocess.run(["git", "push", "-q", "origin", "HEAD:main"], cwd=root, capture_output=True, timeout=60)
