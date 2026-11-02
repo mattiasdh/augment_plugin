@@ -29,6 +29,7 @@ from _gen_util import fm_block, load_config, split_note, stamp, write_if_changed
 from gen_briefing import DATED, VIEW, dated
 
 EARLIER = 7          # earlier briefings linked from the page's footer
+SUB = "\x1f"         # joins a list item to its sub-lines between parse and render
 
 CSS = """
 /* Layout: two full-bleed bands meeting at a hairline; a calm top band (date, headline, project columns), lists below. */
@@ -61,9 +62,9 @@ section { margin-top: 30px; }
 section:first-child { margin-top: 0; }
 h2 { font-family: var(--sans); font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 12px; }
 ol { list-style: none; padding: 0; margin: 0; counter-reset: n; display: grid; gap: 14px; }
-ol li { counter-increment: n; display: grid; grid-template-columns: 26px minmax(0, 1fr); }
-ol li::before { content: counter(n); color: var(--ink-grey); font-variant-numeric: tabular-nums; font-size: 13px; padding-top: 2px; }
-li > div { min-width: 0; overflow-wrap: anywhere; }
+ol > li { counter-increment: n; display: grid; grid-template-columns: 26px minmax(0, 1fr); }
+ol > li::before { content: counter(n); color: var(--ink-grey); font-variant-numeric: tabular-nums; font-size: 13px; padding-top: 2px; }
+ol > li > div { min-width: 0; overflow-wrap: anywhere; }
 li strong { color: var(--ink); font-weight: 600; }
 li .rest { color: var(--ink-soft); }
 li.done .rest, li.done strong { text-decoration: line-through; text-decoration-color: var(--ink-grey); }
@@ -72,6 +73,13 @@ a { color: inherit; text-decoration: underline; text-decoration-color: var(--ink
 a:hover { text-decoration-color: var(--clay); }
 a:focus-visible { outline: 2px solid var(--clay); outline-offset: 2px; }
 code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; background: var(--wash); padding: 1px 4px; border-radius: 3px; }
+details > summary { cursor: pointer; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::after { content: " +"; color: var(--ink-grey); }
+details[open] > summary::after { content: " \u2212"; }
+summary:focus-visible { outline: 2px solid var(--clay); outline-offset: 2px; }
+ul.prep { list-style: none; margin: 6px 0 0; padding: 0 0 0 12px; border-left: 2px solid var(--hairline); display: grid; gap: 4px; color: var(--ink-soft); font-size: 14px; }
+ul.prep strong { color: var(--ink); font-weight: 600; }
 .foot { margin-top: 12px; color: var(--ink-grey); font-size: 12px; }
 section + .foot { margin-top: 36px; }
 @media (max-width: 640px) {
@@ -128,7 +136,7 @@ def parse(body):
             cur[3].append([ln[4:].strip(), ""])
         elif re.match(r"^\s*[-*] ", ln) and cur is not None:
             if re.match(r"^\s{2,}", ln) and cur[2]:
-                cur[2][-1] += " " + ln.strip()[2:]
+                cur[2][-1] += SUB + ln.strip()[2:]      # a sub-line: a meeting card's detail
             else:
                 cur[2].append(ln.strip()[2:])
         elif ln.strip() and not ln.startswith(">") and not ln.startswith("<!--"):
@@ -142,6 +150,8 @@ def parse(body):
 
 
 def item(text, vault):
+    """One list item; an item with sub-lines (a meeting's prep) folds open on the page."""
+    text, *subs = text.split(SUB)
     done = False
     m = re.match(r"^\[( |x|X)\]\s+(.*)$", text)
     if m:
@@ -149,6 +159,9 @@ def item(text, vault):
     m = re.match(r"^(\*\*.+?\*\*)\s*(.*)$", text)
     inner = f"{inline(m.group(1), vault)} <span class=\"rest\">{inline(m.group(2), vault)}</span>" if m else \
         f'<span class="rest">{inline(text, vault)}</span>'
+    if subs:
+        rows = "".join(f"<li>{inline(x, vault)}</li>" for x in subs)
+        inner = f'<details open><summary>{inner}</summary><ul class="prep">{rows}</ul></details>'
     cls = ' class="done"' if done else ""
     return f'<li{cls}><div>{inner}</div></li>'
 

@@ -46,6 +46,7 @@ Each rewrites one derived file and prints a one-line summary. None of them decid
 | `gen_relations.py` | `view/relations.md`, the relationship overlay and the candidate lanes |
 | `gen_verify_queue.py` | the generated half of `verify-queue.md` |
 | `gen_briefing.py` | Prints the facts behind the morning briefing as JSON: changed notes, action candidates, records, cards, runs, queue, each with its link. `--scheduled` skips days `briefing.days` does not list. |
+| `meeting_prep.py` | Matches calendar events to projects (title first, attendees' domains as fallback) and returns each meeting's last notes, decisions since, open and to-discuss items, and an agenda link, for the briefing's Today cards. |
 | `render_briefing.py` | Lays the newest dated briefing out as the dashboard page and rewrites `view/briefing.md`, the index of all briefings. |
 | `gen_search.py` | `search.json`, titles, aliases, keywords, a one-line summary and cited sources per note, plus the in-scope sources, for a search that cannot open files |
 

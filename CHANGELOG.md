@@ -2,6 +2,12 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag. A second release on the same day adds a revision letter: `v2026-09-29 Rev. A` here, `2026.9.29-revA` in `plugin.json`.
 
+## v2026-11-02
+
+### New
+
+**A prep card for each of today's meetings.** `meeting_prep.py` takes the calendar's events (subject, times, location, attendees' domains) and matches each to a project by its title first: the project number, or the folder's name, title or aliases, half its words sufficing, with a tie matching nothing, so a bare "Elia" names no project. Only when the title names none, it matches by the attendees' email domains: those declared in `briefing.project_domains`, then those found in the project's notes, leaving out the office's own (`briefing.own_domains`) and public mail providers; domains are used for matching and never written. For a matched meeting it returns the last `briefing.prep_meetings` (3) meeting notes by the date in their file name (`2026-10-27`, `2025_01_07`, `220_240507_`), the project note's decisions since the oldest of them, the open items (unticked tasks and action-marked lines, merged across meetings, with `open_since`, dropped when a later note ticks or marks them done, `mine` when they name the person) and the items to discuss, and an agenda link that opens a new conversation drafting the agenda from those notes. The brief skill turns it into a card under Today: links to the last meetings, one sentence from the decisions, at most three open items (the person's own first) and two to discuss, and the agenda link; the page shows it as a fold-out block. Every project folder with a number now counts for matching, not only those with a wiki note.
+
 ## v2026-10-31 Rev. A
 
 ### Improvement

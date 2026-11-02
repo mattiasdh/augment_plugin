@@ -374,8 +374,9 @@ def project_entities(root, cfg):
     return {k: max(v, key=v.get) for k, v in votes.items()}
 
 
-def project_names(root, ents):
-    """Each project's folder, wiki note, title and aliases, for matching calendar events to projects."""
+def project_names(root, ents, cfg=None):
+    """Each numbered project folder (`NNN name`) under a child-grouped context, with its wiki
+    note, title and aliases where one exists, for matching calendar events to projects."""
     idx = os.path.join(root, "augment_wiki/index.jsonl")
     meta = {}
     if os.path.exists(idx):
@@ -383,11 +384,19 @@ def project_names(root, ents):
             if l.strip():
                 e = json.loads(l)
                 meta[e.get("id")] = e
+    prefixes = set(ents)
+    for r in ((cfg or {}).get("source_contexts") or []):
+        base = str(r.get("path", "")).rstrip("/")
+        if r.get("group_by") == "child" and os.path.isdir(os.path.join(root, base)):
+            for d in os.listdir(os.path.join(root, base)):
+                if re.match(r"\d{3}\b", d) and os.path.isdir(os.path.join(root, base, d)):
+                    prefixes.add(f"{base}/{d}/")
     out = []
-    for pre, ent in sorted(ents.items()):
+    for pre in sorted(prefixes):
+        ent = ents.get(pre)
         e = meta.get(ent, {})
-        out.append({"folder": pre.rstrip("/").split("/")[-1], "entity": ent, "title": e.get("title"),
-                    "aliases": e.get("aliases") or []})
+        out.append({"folder": pre.rstrip("/").split("/")[-1], "prefix": pre.rstrip("/"), "entity": ent,
+                    "title": e.get("title"), "aliases": e.get("aliases") or []})
     return out
 
 
@@ -477,7 +486,7 @@ def main():
         "look_ahead": look_ahead(morning, b) if b.get("calendar", True) is not False else [],
         "calendar_owner": b.get("calendar_owner"),
         "calendar_account": b.get("calendar_account"),
-        "project_names": project_names(root, ents),
+        "project_names": project_names(root, ents, cfg),
         "index": VIEW,
         "queue_link": QUEUE,
         "window": {"since": since.isoformat(), "until": until.isoformat(), "timezone": tzname, "how": how,
