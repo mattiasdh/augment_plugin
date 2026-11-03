@@ -2,6 +2,12 @@
 
 Dated releases. The semver field in `plugin.json` carries the same date as `year.month.day` so tooling can order it; the form below is the one used for the git tag. A second release on the same day adds a revision letter: `v2026-09-29 Rev. A` here, `2026.9.29-revA` in `plugin.json`.
 
+## v2026-11-03
+
+### Bug fix
+
+**The nightly briefing looks the calendar up before deciding it is absent.** On 3 November the routine had the Microsoft 365 connector attached, yet the briefing reported no calendar: the run never searched for the connector's tools, which a cloud session lists by name only until they are looked up. The brief skill's step 2 and the cycle's phase 9 now load them first (ToolSearch "outlook calendar", "get_me"), and the reminder says whether no calendar tool was found or the one found is signed in as someone else.
+
 ## v2026-11-02 Rev. A
 
 ### Improvement
